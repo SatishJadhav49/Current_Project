@@ -97,14 +97,34 @@ export class VehicletrackingreportComponent implements OnInit {
     this.searched = false;
   }
 
-  /** Date-only display (dd-MM-yyyy) for table + Excel; blank when null. */
+  private static readonly MONTHS = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+
+  /** Short date (dd-MMM-yyyy) for the compact on-screen cell; blank when null. */
   fmtDate(value: string | null): string {
     if (!value) return '';
     const d = new Date(value);
     if (isNaN(d.getTime())) return '';
     const day = String(d.getDate()).padStart(2, '0');
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    return `${day}-${m}-${d.getFullYear()}`;
+    const mon = VehicletrackingreportComponent.MONTHS[d.getMonth()];
+    return `${day}-${mon}-${d.getFullYear()}`;
+  }
+
+  /** Full date + time (dd-MMM-yyyy hh:mm a) for tooltip + Excel; blank when null. */
+  fmtDateTime(value: string | null): string {
+    if (!value) return '';
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return '';
+    const day = String(d.getDate()).padStart(2, '0');
+    const mon = VehicletrackingreportComponent.MONTHS[d.getMonth()];
+    let h = d.getHours();
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    const hh = String(h).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    return `${day}-${mon}-${d.getFullYear()} ${hh}:${mm} ${ampm}`;
   }
 
   /** Tailwind classes for a status chip. */
@@ -161,25 +181,25 @@ export class VehicletrackingreportComponent implements OnInit {
         r.Drive_Name,
         r.Fuel_Name,
         r.Country_Name,
-        this.fmtDate(r.Roll_Down_Date),
-        this.fmtDate(r.CAI_OK_Date),
-        this.fmtDate(r.RoadTest_Date),
+        this.fmtDateTime(r.Roll_Down_Date),
+        this.fmtDateTime(r.CAI_OK_Date),
+        this.fmtDateTime(r.RoadTest_Date),
         r.RoadTest_Status,
-        this.fmtDate(r.UnderBody_Date),
+        this.fmtDateTime(r.UnderBody_Date),
         r.UnderBody_Status,
-        this.fmtDate(r.Dtc_Date),
+        this.fmtDateTime(r.Dtc_Date),
         r.Dtc_Status,
-        this.fmtDate(r.Shower_Date),
+        this.fmtDateTime(r.Shower_Date),
         r.Shower_Status,
-        this.fmtDate(r.StaticAudit_Date),
+        this.fmtDateTime(r.StaticAudit_Date),
         r.StaticAudit_Status,
-        this.fmtDate(r.Vms_Date),
+        this.fmtDateTime(r.Vms_Date),
         r.Vms_Status,
-        this.fmtDate(r.Paint_Date),
+        this.fmtDateTime(r.Paint_Date),
         r.Paint_Status,
         r.Recheck_Status,
         r.Rework_Status,
-        this.fmtDate(r.Rfd_Date),
+        this.fmtDateTime(r.Rfd_Date),
         r.Rfd_Status,
       ]);
     });
@@ -190,6 +210,10 @@ export class VehicletrackingreportComponent implements OnInit {
     sheet.getColumn(1).width = 6;
     sheet.getColumn(2).width = 20; // VIN
     sheet.getColumn(8).width = 20; // Engine No
+    // Date columns hold "dd-MMM-yyyy hh:mm a" — widen them to fit.
+    [13, 14, 15, 17, 19, 21, 23, 25, 27, 31].forEach((c) => {
+      sheet.getColumn(c).width = 21;
+    });
     sheet.views = [{ state: 'frozen', ySplit: 1 }];
 
     const buffer = await workbook.xlsx.writeBuffer();
