@@ -1,0 +1,165 @@
+<div class="bg-white rounded-lg shadow-md p-6 mb-4">
+  <!-- Stage header -->
+  <div class="flex items-center justify-between mb-4 pb-3 border-b">
+    <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+      <span class="inline-flex items-center justify-center w-8 h-8 rounded-full border-2 border-blue-600 text-base font-bold leading-none">
+        🚿
+      </span>
+      Shower Test
+    </h3>
+    <div class="flex items-center gap-3">
+      <span class="text-xs text-gray-500">
+        Vehicle: <span class="font-semibold text-gray-700">{{ vehicle?.VIN_No }}</span>
+        <span *ngIf="auditDate" class="ml-3 pl-3 border-l border-gray-300">
+          Saved: <span class="font-semibold text-gray-700">{{ auditDate | date:'medium' }}</span>
+        </span>
+      </span>
+      <button
+        *ngIf="!recheckDone"
+        type="button"
+        (click)="runImport()"
+        [disabled]="locked || importing"
+        class="px-3 py-2 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+        title="Re-fetch the latest data from the shower booth"
+      >
+        <span *ngIf="!importing">⟳ Refresh from Booth</span>
+        <span *ngIf="importing">Refreshing…</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- External-source note -->
+  <div class="bg-blue-50 border border-blue-200 text-blue-900 text-sm rounded-md px-3 py-2 mb-4">
+    Shower Test data is captured by the external shower booth system. This view
+    is read-only — defects shown here were imported from the booth.
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="state === 'loading'" class="text-center py-10 text-gray-500">
+    <div class="text-4xl mb-2">⏳</div>
+    <p class="text-base font-medium">Loading shower test data…</p>
+  </div>
+
+  <!-- Not done in shower booth yet -->
+  <div *ngIf="state === 'not-done'" class="text-center py-10">
+    <div class="text-5xl mb-2">🚿</div>
+    <p class="text-lg font-semibold text-gray-800 mb-1">
+      Shower test is not yet done for this vehicle
+    </p>
+    <p class="text-sm text-gray-600">
+      Please complete the shower booth scan first, then come back and click
+      <span class="font-semibold">Refresh from Booth</span> above.
+    </p>
+  </div>
+
+  <!-- RFD already done and no shower data was ever imported.
+       We cannot re-fetch (server rejects post-RFD writes), so we just
+       acknowledge the state instead of showing the "not done" + Refresh card. -->
+  <div *ngIf="state === 'rfd-locked-no-data'" class="text-center py-10">
+    <div class="text-5xl mb-2">🚚</div>
+    <p class="text-lg font-semibold text-gray-800 mb-1">
+      Physical RFD already done for this vehicle
+    </p>
+    <p class="text-sm text-gray-600">
+      No shower test data was imported for this vehicle. Since dispatch is
+      already marked, no further imports or edits are possible.
+    </p>
+  </div>
+
+  <!-- Header strip (shown when data is present) -->
+  <div
+    *ngIf="state === 'no-defect' || state === 'with-defects'"
+    class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"
+  >
+    <div class="bg-gray-50 rounded-md px-3 py-2 border border-gray-200">
+      <div class="text-xs text-gray-500">Auditor</div>
+      <div class="text-base font-semibold text-gray-800">
+        {{ auditorName || '—' }}
+      </div>
+    </div>
+    <div class="bg-gray-50 rounded-md px-3 py-2 border border-gray-200">
+      <div class="text-xs text-gray-500">Audit Date</div>
+      <div class="text-base font-semibold text-gray-800">
+        {{ auditDate ? (auditDate | date:'medium') : '—' }}
+      </div>
+    </div>
+    <div
+      class="rounded-md px-3 py-2 border"
+      [ngClass]="state === 'no-defect'
+        ? 'bg-green-50 border-green-200'
+        : 'bg-amber-50 border-amber-200'"
+    >
+      <div class="text-xs"
+        [ngClass]="state === 'no-defect' ? 'text-green-700' : 'text-amber-700'">
+        Result
+      </div>
+      <div class="text-base font-semibold"
+        [ngClass]="state === 'no-defect' ? 'text-green-800' : 'text-amber-800'">
+        {{ state === 'no-defect' ? 'OK — No defects' : (concerns.length + ' defect(s)') }}
+      </div>
+    </div>
+  </div>
+
+  <!-- No-defect happy state -->
+  <div
+    *ngIf="state === 'no-defect'"
+    class="bg-green-50 border border-green-200 rounded-md p-6 text-center"
+  >
+    <div class="text-4xl mb-2">✅</div>
+    <p class="text-base font-semibold text-green-800">
+      No defects found in the shower test for this vehicle.
+    </p>
+  </div>
+
+  <!-- Skipped-rows warning banner -->
+  <div
+    *ngIf="(state === 'no-defect' || state === 'with-defects') && skipped.length > 0"
+    class="bg-amber-50 border border-amber-200 text-amber-900 rounded-md px-3 py-2 mb-4 text-sm"
+  >
+    <div class="font-semibold mb-1">
+      ⚠ {{ skipped.length }} row(s) skipped — master entries missing
+    </div>
+    <ul class="list-disc ml-5">
+      <li *ngFor="let s of skipped">
+        <span class="font-medium">{{ s.MissingMaster }}:</span>
+        "{{ s.MissingValue }}"
+        <span *ngIf="s.Part_Name" class="text-amber-700">
+          (Part: {{ s.Part_Name }})
+        </span>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Concerns table (read-only) -->
+  <div *ngIf="state === 'with-defects' && concerns.length > 0" class="overflow-x-auto">
+    <table class="min-w-full text-sm border border-gray-200 rounded-md">
+      <thead class="bg-gray-100 text-gray-700">
+        <tr>
+          <th class="px-3 py-2 text-left">#</th>
+          <th class="px-3 py-2 text-left">Vehicle Area</th>
+          <th class="px-3 py-2 text-left">Part</th>
+          <th class="px-3 py-2 text-left">Defect</th>
+          <th class="px-3 py-2 text-left">Location</th>
+          <th class="px-3 py-2 text-left">Severity</th>
+          <th class="px-3 py-2 text-left">Attribution</th>
+          <th class="px-3 py-2 text-left">Remark</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr
+          *ngFor="let c of concerns; let i = index"
+          class="border-t border-gray-200"
+        >
+          <td class="px-3 py-2 font-semibold text-gray-700">{{ i + 1 }}</td>
+          <td class="px-3 py-2">{{ c.Vehicle_Area_Name || '—' }}</td>
+          <td class="px-3 py-2">{{ c.Part_Name }}</td>
+          <td class="px-3 py-2">{{ c.Defect_Name }}</td>
+          <td class="px-3 py-2">{{ c.Location_Name }}</td>
+          <td class="px-3 py-2">{{ c.Severity_Code || '—' }}</td>
+          <td class="px-3 py-2">{{ c.Attribution_Name || '—' }}</td>
+          <td class="px-3 py-2 text-gray-600">{{ c.Remark || '—' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

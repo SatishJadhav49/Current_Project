@@ -1,0 +1,88 @@
+using API_LSP.Data;
+using API_LSP.Utils;
+using API_LSP.Middleware;
+using API_LSP.Models;
+var builder = WebApplication.CreateBuilder(args);
+
+// Add services to the container.
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // Preserve original property naming (PascalCase with underscores)
+        options.JsonSerializerOptions.PropertyNamingPolicy = null;
+    });
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+// Add connection string as a service
+builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
+builder.Services.AddScoped<IDbConnectionFactory, DbConnectionFactory>();
+
+// Configure SMTP Settings
+builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
+
+// Configure System Settings
+builder.Services.Configure<SystemSettings>(builder.Configuration.GetSection("SystemSettings"));
+
+// Register Data Services
+builder.Services.AddScoped<MM_ModelDataService>();
+builder.Services.AddScoped<MM_EmployeeDataService>();
+builder.Services.AddScoped<MM_ErrorLogDataService>();
+builder.Services.AddScoped<MM_User_RolesDataService>();
+builder.Services.AddScoped<MM_CommonDataService>();
+builder.Services.AddScoped<MM_DashboardDataService>();
+
+// Masters
+builder.Services.AddScoped<MM_Documents_MasterDataService>();
+builder.Services.AddScoped<MM_Attribution_MasterDataService>();
+builder.Services.AddScoped<MM_Part_MasterDataService>();
+builder.Services.AddScoped<MM_Defect_MasterDataService>();
+builder.Services.AddScoped<MM_Location_MasterDataService>();
+builder.Services.AddScoped<MM_Auditor_MasterDataService>();
+builder.Services.AddScoped<MM_Defect_Type_MasterDataService>();
+builder.Services.AddScoped<MM_Vehicle_DetailsDataService>();
+builder.Services.AddScoped<MM_Vehicle_TrackingDataService>();
+builder.Services.AddScoped<MM_ShowerTestDataService>();
+builder.Services.AddScoped<MM_Area_ImageDataService>();
+builder.Services.AddScoped<MM_ReportsDataService>();
+
+
+
+
+builder.Services.AddSingleton<IApiResponseHelper, ApiResponseHelper>();
+
+// Add CORS
+builder.Services.AddCors(options =>
+{   
+    options.AddPolicy("AllowAll",
+        builder =>
+        {
+            builder
+                .AllowAnyOrigin()
+                .AllowAnyMethod()
+                .AllowAnyHeader();
+        });
+});
+
+
+var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+// Add custom exception handling middleware
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+
+//app.UseHttpsRedirection();
+
+app.UseCors("AllowAll");
+
+app.UseAuthorization();
+
+app.MapControllers();
+
+app.Run();

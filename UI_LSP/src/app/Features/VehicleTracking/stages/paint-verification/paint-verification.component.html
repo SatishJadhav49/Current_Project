@@ -1,0 +1,277 @@
+<div class="bg-white rounded-lg shadow-md p-6 mb-4">
+  <!-- Stage header -->
+  <div class="flex items-center justify-between mb-4 pb-3 border-b">
+    <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+      <span class="inline-flex items-center justify-center w-8 h-8 rounded-full border-2 border-blue-600 text-base font-bold leading-none">
+        🎨
+      </span>
+      Paint Verification
+    </h3>
+    <span class="text-xs text-gray-500">
+      Vehicle: <span class="font-semibold text-gray-700">{{ vehicle?.VIN_No }}</span>
+      <span *ngIf="logDate" class="ml-3 pl-3 border-l border-gray-300">
+        Saved: <span class="font-semibold text-gray-700">{{ logDate | date:'medium' }}</span>
+      </span>
+    </span>
+  </div>
+
+  <!-- Top action row: Auditor + No Defect -->
+  <fieldset [disabled]="locked" class="flex flex-col md:flex-row md:items-end gap-3 mb-6 disabled:opacity-60">
+    <div class="w-full md:w-96">
+      <label class="block text-sm font-medium text-gray-700 mb-1">
+        Paint Auditor <span class="text-red-500">*</span>
+      </label>
+      <select
+        name="auditor"
+        [(ngModel)]="selectedAuditorId"
+        (ngModelChange)="onAuditorChange()"
+        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        <option [ngValue]="0">-- Select Auditor --</option>
+        <option *ngFor="let a of auditors" [ngValue]="a.Auditor_ID">
+          {{ a.Auditor_Name }}
+        </option>
+      </select>
+    </div>
+
+    <div *ngIf="!concerns.length" class="md:ml-auto">
+      <button
+        type="button"
+        (click)="onNoDefect()"
+        [disabled]="!selectedAuditorId || savingNoDefect || saving"
+        class="w-full md:w-auto px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-md font-semibold whitespace-nowrap"
+        title="Mark this stage as completed with no defects"
+      >
+        {{ savingNoDefect ? 'Saving…' : '✓ No Defect' }}
+      </button>
+    </div>
+  </fieldset>
+
+  <!-- ─────────────── Image audit panel ─────────────── -->
+  <div class="border-t pt-4 mb-6">
+    <h4 class="text-base font-semibold text-gray-800 mb-3 border-l-4 border-blue-500 pl-2">
+      Image Audit
+    </h4>
+
+    <div class="flex flex-col md:flex-row md:items-end gap-3 mb-3">
+      <div class="w-full md:w-72">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Vehicle Area</label>
+        <select
+          name="paintArea"
+          [(ngModel)]="selectedAreaId"
+          (ngModelChange)="onAreaChange()"
+          [disabled]="locked"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60"
+        >
+          <option [ngValue]="0">-- Select Area --</option>
+          <option *ngFor="let a of vehicleAreas" [ngValue]="a.Vehicle_Area_ID">
+            {{ a.Vehicle_Area_Name }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Image tabs when the area has multiple views -->
+      <div *ngIf="areaImages.length > 1" class="flex gap-1 flex-wrap">
+        <button
+          *ngFor="let img of areaImages; let i = index"
+          type="button"
+          (click)="switchImage(i)"
+          class="px-3 py-1.5 rounded-md text-xs font-semibold border"
+          [ngClass]="i === activeImageIndex
+            ? 'bg-blue-600 text-white border-blue-600'
+            : 'bg-white text-gray-700 border-gray-300 hover:bg-blue-50'"
+        >
+          {{ img.Image_Name }}
+        </button>
+      </div>
+
+      <span *ngIf="loadingImages" class="text-sm text-blue-600 pb-2">Loading images…</span>
+    </div>
+
+    <!-- Hint strip after a tap -->
+    <div
+      *ngIf="clickHint"
+      class="bg-blue-50 border border-blue-200 text-blue-900 text-sm rounded-md px-3 py-2 mb-3 flex items-center justify-between"
+    >
+      <span>👆 {{ clickHint }}</span>
+      <button
+        *ngIf="partFilterIds"
+        type="button"
+        (click)="clearPartFilter()"
+        class="text-xs text-blue-700 underline ml-3"
+      >
+        Show all parts
+      </button>
+    </div>
+
+    <!-- Image + overlay -->
+    <div *ngIf="activeImage" class="relative select-none max-w-3xl"
+      [class.cursor-crosshair]="!locked"
+      (click)="onImageClick($event)"
+    >
+      <img
+        #auditImg
+        [src]="imageUrl(activeImage.Image_FileName)"
+        [alt]="activeImage.Image_Name"
+        class="w-full block rounded border border-gray-200"
+        draggable="false"
+      />
+      <svg
+        class="absolute inset-0 w-full h-full pointer-events-none"
+        viewBox="0 0 1000 1000"
+        preserveAspectRatio="none"
+      >
+        <!-- Hotspots (faint) -->
+        <rect
+          *ngFor="let h of hotspots"
+          [attr.x]="h.x * 1000"
+          [attr.y]="h.y * 1000"
+          [attr.width]="h.w * 1000"
+          [attr.height]="h.h * 1000"
+          fill="rgba(37,99,235,0.06)"
+          stroke="rgba(37,99,235,0.45)"
+          stroke-width="2"
+          stroke-dasharray="6 4"
+          vector-effect="non-scaling-stroke"
+        />
+
+        <!-- Saved defect pins (red) -->
+        <g *ngFor="let c of activePins">
+          <circle
+            [attr.cx]="(c.Image_X ?? 0) * 1000"
+            [attr.cy]="(c.Image_Y ?? 0) * 1000"
+            r="14"
+            fill="rgba(220,38,38,0.85)"
+            stroke="white"
+            stroke-width="3"
+            vector-effect="non-scaling-stroke"
+          />
+        </g>
+
+        <!-- Pending click marker (green) -->
+        <g *ngIf="pendingClick">
+          <circle
+            [attr.cx]="pendingClick.x * 1000"
+            [attr.cy]="pendingClick.y * 1000"
+            r="16"
+            fill="rgba(5,150,105,0.35)"
+            stroke="#059669"
+            stroke-width="3"
+            vector-effect="non-scaling-stroke"
+          />
+          <circle
+            [attr.cx]="pendingClick.x * 1000"
+            [attr.cy]="pendingClick.y * 1000"
+            r="4"
+            fill="#059669"
+          />
+        </g>
+      </svg>
+    </div>
+
+    <p *ngIf="selectedAreaId > 0 && !loadingImages && !areaImages.length" class="text-sm text-gray-500 italic">
+      No image is mapped for this area and this vehicle's model — record the
+      concern using the picker below.
+    </p>
+    <p *ngIf="selectedAreaId === 0" class="text-xs text-gray-500">
+      Select an area to load its image. Tap the image where the defect is —
+      the part will be selected automatically. Red dots are already-recorded defects.
+    </p>
+  </div>
+
+  <!-- Defect entry form -->
+  <div class="border-t pt-4 mb-6">
+    <h4 class="text-base font-semibold text-gray-800 mb-3 border-l-4 border-orange-500 pl-2">
+      Concerns
+    </h4>
+
+    <app-defect-entry-form
+      [concerns]="concerns"
+      [saving]="saving"
+      [locked]="locked"
+      [partFilterIds]="partFilterIds"
+      (addRequest)="onAddRequest($event)"
+      (updateRequest)="onUpdateRequest($event)"
+      (removeRequest)="onRemoveRequest($event)"
+    ></app-defect-entry-form>
+  </div>
+
+  <!-- Attachments (optional, auto-saved) -->
+  <div class="border-t pt-4">
+    <div class="flex items-center justify-between mb-3">
+      <h4 class="text-base font-semibold text-gray-800 border-l-4 border-orange-500 pl-2">
+        Images / Files <span class="text-xs text-gray-500 font-normal">(optional)</span>
+      </h4>
+      <span class="text-xs text-gray-500">
+        {{ documents.length }} / {{ MAX_FILES }}
+      </span>
+    </div>
+
+    <input
+      *ngIf="!locked"
+      type="file"
+      multiple
+      accept="image/*,.pdf,.doc,.docx"
+      (change)="onFilesChosen($event)"
+      [disabled]="documents.length >= MAX_FILES || uploading"
+      class="block w-full md:w-auto text-sm text-gray-700 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:cursor-pointer disabled:opacity-50 mb-3"
+    />
+    <p *ngIf="uploading" class="text-sm text-blue-700 mb-2">Uploading…</p>
+
+    <div *ngIf="documents.length" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+      <div
+        *ngFor="let f of documents; let i = index"
+        class="relative border border-gray-200 rounded-md bg-gray-50 overflow-hidden"
+      >
+        <a
+          *ngIf="isImage(f); else fileLink"
+          [href]="downloadUrlOf(f)"
+          target="_blank"
+          rel="noopener"
+          class="block aspect-square bg-gray-100"
+        >
+          <img
+            [src]="downloadUrlOf(f)"
+            [alt]="displayNameOf(f)"
+            class="w-full h-full object-cover"
+          />
+        </a>
+        <ng-template #fileLink>
+          <a
+            [href]="downloadUrlOf(f)"
+            target="_blank"
+            rel="noopener"
+            class="flex flex-col items-center justify-center aspect-square bg-gray-100 text-gray-500 hover:bg-gray-200"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2z" />
+            </svg>
+            <span class="text-[10px] mt-1 px-1">File</span>
+          </a>
+        </ng-template>
+
+        <div class="px-2 py-1 text-[11px] text-gray-700 truncate" [title]="displayNameOf(f)">
+          {{ displayNameOf(f) }}
+        </div>
+
+        <button
+          *ngIf="!locked"
+          type="button"
+          (click)="removeFile(i)"
+          class="absolute top-1 right-1 bg-white rounded-full p-1 text-red-600 hover:bg-red-100 transition-colors shadow"
+          title="Remove"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <p *ngIf="!documents.length" class="text-xs text-gray-400 italic">
+      No files attached yet.
+    </p>
+  </div>
+</div>

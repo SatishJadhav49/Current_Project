@@ -1,0 +1,208 @@
+<div class="bg-white rounded-lg shadow-md p-6 mb-4">
+  <!-- Vehicle Info (read-only chips) -->
+  <h3 class="text-base font-semibold text-gray-800 mb-3 border-l-4 border-blue-500 pl-2">
+    Vehicle Details
+  </h3>
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+    <div class="bg-gray-50 rounded p-3">
+      <div class="text-xs text-gray-500 uppercase">Model Code</div>
+      <div class="text-base font-medium text-gray-800">
+        {{ Vehicle_Data.Model_Code || '—' }}
+      </div>
+    </div>
+    <div class="bg-gray-50 rounded p-3">
+      <div class="text-xs text-gray-500 uppercase">Model Desc</div>
+      <div class="text-base font-medium text-gray-800">
+        {{ Vehicle_Data.Model_Desc || '—' }}
+      </div>
+    </div>
+    <div class="bg-gray-50 rounded p-3">
+      <div class="text-xs text-gray-500 uppercase">Variant</div>
+      <div class="text-base font-medium text-gray-800">
+        {{ Vehicle_Data.Variant || '—' }}
+      </div>
+    </div>
+    <div class="bg-gray-50 rounded p-3">
+      <div class="text-xs text-gray-500 uppercase">Colour</div>
+      <div class="text-base font-medium text-gray-800">
+        {{ Vehicle_Data.Colour_Desc || Vehicle_Data.Colour_Code || '—' }}
+      </div>
+    </div>
+    <div class="bg-gray-50 rounded p-3">
+      <div class="text-xs text-gray-500 uppercase">Body Serial No</div>
+      <div class="text-base font-medium text-gray-800">
+        {{ Vehicle_Data.Body_Serial_No || '—' }}
+      </div>
+    </div>
+    <div class="bg-gray-50 rounded p-3">
+      <div class="text-xs text-gray-500 uppercase">Engine No</div>
+      <div class="text-base font-medium text-gray-800">
+        {{ Vehicle_Data.Engine_No || '—' }}
+      </div>
+    </div>
+    <div class="bg-gray-50 rounded p-3">
+      <div class="text-xs text-gray-500 uppercase">Roll Down Date</div>
+      <div class="text-base font-medium text-gray-800">
+        {{ Vehicle_Data.Roll_Down_Date ? (Vehicle_Data.Roll_Down_Date | date:'dd-MMM-yyyy hh:mm a') : '—' }}
+      </div>
+    </div>
+    <div class="bg-gray-50 rounded p-3">
+      <div class="text-xs text-gray-500 uppercase">CAI OK Date</div>
+      <div class="text-base font-medium text-gray-800">
+        {{ Vehicle_Data.CAI_OK_Date ? (Vehicle_Data.CAI_OK_Date | date:'dd-MMM-yyyy hh:mm a') : '—' }}
+      </div>
+    </div>
+    <div class="bg-gray-50 rounded p-3">
+      <div class="text-xs text-gray-500 uppercase">Plant</div>
+      <div class="text-base font-medium text-gray-800">{{ plantCode || '—' }}</div>
+    </div>
+  </div>
+
+  <!-- Confirm / Select -->
+  <h3 class="text-base font-semibold text-gray-800 mb-3 border-l-4 border-yellow-500 pl-2">
+    Confirm / Select
+  </h3>
+  <fieldset [disabled]="locked" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6 disabled:opacity-60">
+    <!-- Model -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">
+        Model <span class="text-red-500">*</span>
+      </label>
+      <div class="flex items-center gap-2">
+        <select
+          name="Model_ID"
+          [(ngModel)]="Vehicle_Data.Model_ID"
+          (change)="onDropdownChange('Model_ID')"
+          class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option [ngValue]="0">-- Select Model --</option>
+          <option *ngFor="let m of models" [ngValue]="m.Model_ID">
+            {{ m.Model_Name }}
+          </option>
+        </select>
+        <span
+          *ngIf="chip('Model_ID') as c"
+          class="px-2 py-1 rounded text-xs font-semibold whitespace-nowrap"
+          [ngClass]="c.cls"
+          >{{ c.label }}</span
+        >
+      </div>
+    </div>
+
+    <!-- Build Phase -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">
+        Build Phase <span class="text-red-500">*</span>
+      </label>
+      <div class="flex items-center gap-2">
+        <select
+          name="Build_Phase_ID"
+          [(ngModel)]="Vehicle_Data.Build_Phase_ID"
+          (change)="onDropdownChange('Build_Phase_ID')"
+          class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option [ngValue]="0">-- Select Build Phase --</option>
+          <option *ngFor="let b of buildPhases" [ngValue]="b.Build_Phase_ID">
+            {{ b.Build_Phase_Name }}
+          </option>
+        </select>
+        <span
+          *ngIf="chip('Build_Phase_ID') as c"
+          class="px-2 py-1 rounded text-xs font-semibold whitespace-nowrap"
+          [ngClass]="c.cls"
+          >{{ c.label }}</span
+        >
+      </div>
+    </div>
+
+    <!-- Drive Type -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">
+        Drive Type <span class="text-red-500">*</span>
+      </label>
+      <div class="flex items-center gap-2">
+        <select
+          name="Drive_ID"
+          [(ngModel)]="Vehicle_Data.Drive_ID"
+          (change)="onDropdownChange('Drive_ID')"
+          class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option [ngValue]="0">-- Select Drive Type --</option>
+          <option *ngFor="let d of drives" [ngValue]="d.Drive_ID">
+            {{ d.Drive_Name }}
+          </option>
+        </select>
+        <span
+          *ngIf="chip('Drive_ID') as c"
+          class="px-2 py-1 rounded text-xs font-semibold whitespace-nowrap"
+          [ngClass]="c.cls"
+          >{{ c.label }}</span
+        >
+      </div>
+    </div>
+
+    <!-- Fuel Type -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">
+        Fuel Type <span class="text-red-500">*</span>
+      </label>
+      <div class="flex items-center gap-2">
+        <select
+          name="Fuel_ID"
+          [(ngModel)]="Vehicle_Data.Fuel_ID"
+          (change)="onDropdownChange('Fuel_ID')"
+          class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option [ngValue]="0">-- Select Fuel Type --</option>
+          <option *ngFor="let f of fuels" [ngValue]="f.Fuel_ID">
+            {{ f.Fuel_Name }}
+          </option>
+        </select>
+        <span
+          *ngIf="chip('Fuel_ID') as c"
+          class="px-2 py-1 rounded text-xs font-semibold whitespace-nowrap"
+          [ngClass]="c.cls"
+          >{{ c.label }}</span
+        >
+      </div>
+    </div>
+
+    <!-- Country -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">
+        Country <span class="text-red-500">*</span>
+      </label>
+      <div class="flex items-center gap-2">
+        <select
+          name="Country_ID"
+          [(ngModel)]="Vehicle_Data.Country_ID"
+          (change)="onDropdownChange('Country_ID')"
+          class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option [ngValue]="0">-- Select Country --</option>
+          <option *ngFor="let c of countries" [ngValue]="c.Country_ID">
+            {{ c.Country_Name }}
+          </option>
+        </select>
+        <span
+          *ngIf="chip('Country_ID') as c"
+          class="px-2 py-1 rounded text-xs font-semibold whitespace-nowrap"
+          [ngClass]="c.cls"
+          >{{ c.label }}</span
+        >
+      </div>
+    </div>
+  </fieldset>
+
+  <!-- Single Save (no "Continue") -->
+  <div *ngIf="!locked" class="flex justify-end pt-4 border-t">
+    <button
+      type="button"
+      (click)="save()"
+      [disabled]="!isValid() || saving"
+      class="px-6 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-md font-semibold"
+    >
+      {{ saving ? 'Saving…' : '✓ Save' }}
+    </button>
+  </div>
+</div>

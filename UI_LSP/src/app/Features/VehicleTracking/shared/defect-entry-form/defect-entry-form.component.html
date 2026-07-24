@@ -1,0 +1,373 @@
+<div class="space-y-4">
+  <!-- Picker grid + selected strip + remark + actions are only shown when
+       the parent allows adds (pickerEnabled) or when an edit is in progress.
+       When the vehicle is locked (RFD done), the picker is hidden entirely. -->
+  <ng-container *ngIf="!locked && (pickerEnabled || editingDefectEntryId)">
+  <!-- Picker grid (each column is a search + scrollable list) -->
+  <div class="overflow-x-auto -mx-1 px-1">
+    <div class="grid grid-cols-7 gap-2 min-w-[1100px]">
+      <!-- Area * -->
+      <div class="border border-gray-300 rounded-md bg-white flex flex-col">
+        <div class="bg-teal-600 text-white text-center text-sm font-semibold py-2 rounded-t-md">
+          Area <span class="text-red-300">*</span>
+        </div>
+        <input
+          type="search"
+          [(ngModel)]="search.area"
+          placeholder="Search Area"
+          class="w-full px-2 py-1.5 text-xs border-b border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        />
+        <div class="h-64 overflow-y-auto">
+          <button
+            *ngFor="let a of filteredAreas()"
+            type="button"
+            (click)="pickArea(a)"
+            class="block w-full text-left px-3 py-3 text-sm border-b border-gray-100 transition-colors hover:bg-blue-50"
+            [class.bg-blue-100]="isPicked(selection.Vehicle_Area_ID, a.Vehicle_Area_ID)"
+            [class.font-semibold]="isPicked(selection.Vehicle_Area_ID, a.Vehicle_Area_ID)"
+            [class.text-blue-900]="isPicked(selection.Vehicle_Area_ID, a.Vehicle_Area_ID)"
+          >
+            {{ a.Vehicle_Area_Name }}
+          </button>
+          <div *ngIf="!filteredAreas().length" class="text-xs text-gray-400 italic px-3 py-2">No matches</div>
+        </div>
+      </div>
+
+      <!-- Part * -->
+      <div class="border border-gray-300 rounded-md bg-white flex flex-col">
+        <div class="bg-teal-600 text-white text-center text-sm font-semibold py-2 rounded-t-md">
+          Part <span class="text-red-300">*</span>
+        </div>
+        <input
+          type="search"
+          [(ngModel)]="search.part"
+          placeholder="Search Part"
+          class="w-full px-2 py-1.5 text-xs border-b border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        />
+        <div class="h-64 overflow-y-auto">
+          <button
+            *ngFor="let p of filteredParts()"
+            type="button"
+            (click)="pickPart(p)"
+            class="block w-full text-left px-3 py-3 text-sm border-b border-gray-100 hover:bg-blue-50"
+            [class.bg-blue-100]="isPicked(selection.Part_ID, p.Part_ID)"
+            [class.font-semibold]="isPicked(selection.Part_ID, p.Part_ID)"
+            [class.text-blue-900]="isPicked(selection.Part_ID, p.Part_ID)"
+          >
+            {{ p.Part_Name }}
+          </button>
+          <div *ngIf="!filteredParts().length" class="text-xs text-gray-400 italic px-3 py-2">No matches</div>
+        </div>
+      </div>
+
+      <!-- Defect * -->
+      <div class="border border-gray-300 rounded-md bg-white flex flex-col">
+        <div class="bg-teal-600 text-white text-center text-sm font-semibold py-2 rounded-t-md">
+          Defect <span class="text-red-300">*</span>
+        </div>
+        <input
+          type="search"
+          [(ngModel)]="search.defect"
+          placeholder="Search Defect"
+          class="w-full px-2 py-1.5 text-xs border-b border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        />
+        <div class="h-64 overflow-y-auto">
+          <button
+            *ngFor="let d of filteredDefects()"
+            type="button"
+            (click)="pickDefect(d)"
+            class="block w-full text-left px-3 py-3 text-sm border-b border-gray-100 hover:bg-blue-50"
+            [class.bg-blue-100]="isPicked(selection.Defect_ID, d.Defect_ID)"
+            [class.font-semibold]="isPicked(selection.Defect_ID, d.Defect_ID)"
+            [class.text-blue-900]="isPicked(selection.Defect_ID, d.Defect_ID)"
+          >
+            {{ d.Defect_Name }}
+          </button>
+          <div *ngIf="!filteredDefects().length" class="text-xs text-gray-400 italic px-3 py-2">No matches</div>
+        </div>
+      </div>
+
+      <!-- Location * -->
+      <div class="border border-gray-300 rounded-md bg-white flex flex-col">
+        <div class="bg-teal-600 text-white text-center text-sm font-semibold py-2 rounded-t-md">
+          Location <span class="text-red-300">*</span>
+        </div>
+        <input
+          type="search"
+          [(ngModel)]="search.location"
+          placeholder="Search Loc."
+          class="w-full px-2 py-1.5 text-xs border-b border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        />
+        <div class="h-64 overflow-y-auto">
+          <button
+            *ngFor="let l of filteredLocations()"
+            type="button"
+            (click)="pickLocation(l)"
+            class="block w-full text-left px-3 py-3 text-sm border-b border-gray-100 hover:bg-blue-50"
+            [class.bg-blue-100]="isPicked(selection.Location_ID, l.Location_ID)"
+            [class.font-semibold]="isPicked(selection.Location_ID, l.Location_ID)"
+            [class.text-blue-900]="isPicked(selection.Location_ID, l.Location_ID)"
+          >
+            {{ l.Location_Name }}
+          </button>
+          <div *ngIf="!filteredLocations().length" class="text-xs text-gray-400 italic px-3 py-2">No matches</div>
+        </div>
+      </div>
+
+      <!-- Severity * -->
+      <div class="border border-gray-300 rounded-md bg-white flex flex-col">
+        <div class="bg-teal-600 text-white text-center text-sm font-semibold py-2 rounded-t-md">
+          Severity <span class="text-red-300">*</span>
+        </div>
+        <input
+          type="search"
+          [(ngModel)]="search.severity"
+          placeholder="Search Sev."
+          class="w-full px-2 py-1.5 text-xs border-b border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        />
+        <div class="h-64 overflow-y-auto">
+          <button
+            *ngFor="let s of filteredSeverities()"
+            type="button"
+            (click)="pickSeverity(s)"
+            class="block w-full text-left px-3 py-3 text-sm border-b border-gray-100 hover:bg-blue-50"
+            [class.bg-blue-100]="isPicked(selection.Severity_ID, s.Severity_ID)"
+            [class.font-semibold]="isPicked(selection.Severity_ID, s.Severity_ID)"
+            [class.text-blue-900]="isPicked(selection.Severity_ID, s.Severity_ID)"
+          >
+            <span class="font-mono font-bold mr-1">{{ s.Severity_Code }}</span>
+            <span class="text-xs text-gray-600">{{ s.Severity_Name }}</span>
+          </button>
+          <div *ngIf="!filteredSeverities().length" class="text-xs text-gray-400 italic px-3 py-2">No matches</div>
+        </div>
+      </div>
+
+      <!-- Attribution * -->
+      <div class="border border-gray-300 rounded-md bg-white flex flex-col">
+        <div class="bg-teal-600 text-white text-center text-sm font-semibold py-2 rounded-t-md">
+          Attribution <span class="text-red-300">*</span>
+        </div>
+        <input
+          type="search"
+          [(ngModel)]="search.attribution"
+          placeholder="Search Att."
+          class="w-full px-2 py-1.5 text-xs border-b border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        />
+        <div class="h-64 overflow-y-auto">
+          <button
+            *ngFor="let a of filteredAttributions()"
+            type="button"
+            (click)="pickAttribution(a)"
+            class="block w-full text-left px-3 py-3 text-sm border-b border-gray-100 hover:bg-blue-50"
+            [class.bg-blue-100]="isPicked(selection.Attribution_ID, a.Attribution_ID)"
+            [class.font-semibold]="isPicked(selection.Attribution_ID, a.Attribution_ID)"
+            [class.text-blue-900]="isPicked(selection.Attribution_ID, a.Attribution_ID)"
+          >
+            {{ a.Attribution_Name }}
+          </button>
+          <div *ngIf="!filteredAttributions().length" class="text-xs text-gray-400 italic px-3 py-2">No matches</div>
+        </div>
+      </div>
+
+      <!-- Defect Type * -->
+      <div class="border border-gray-300 rounded-md bg-white flex flex-col">
+        <div class="bg-teal-600 text-white text-center text-sm font-semibold py-2 rounded-t-md">
+          Defect Type <span class="text-red-300">*</span>
+        </div>
+        <input
+          type="search"
+          [(ngModel)]="search.defectType"
+          placeholder="Search Defect Type"
+          class="w-full px-2 py-1.5 text-xs border-b border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        />
+        <div class="h-64 overflow-y-auto">
+          <button
+            *ngFor="let d of filteredDefectTypes()"
+            type="button"
+            (click)="pickDefectType(d)"
+            class="block w-full text-left px-3 py-3 text-sm border-b border-gray-100 hover:bg-blue-50"
+            [class.bg-blue-100]="isPicked(selection.Defect_Type_ID, d.Defect_Type_ID)"
+            [class.font-semibold]="isPicked(selection.Defect_Type_ID, d.Defect_Type_ID)"
+            [class.text-blue-900]="isPicked(selection.Defect_Type_ID, d.Defect_Type_ID)"
+          >
+            {{ d.Defect_Type_Name }}
+          </button>
+          <div *ngIf="!filteredDefectTypes().length" class="text-xs text-gray-400 italic px-3 py-2">No matches</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Selected summary strip -->
+  <div class="bg-gray-50 border border-gray-200 rounded-md px-3 py-2 text-sm">
+    <span class="text-xs text-gray-500 mr-2">Selected:</span>
+    <ng-container *ngIf="selection.Part_ID || selection.Defect_ID; else nothingPicked">
+      <span class="inline-flex flex-wrap gap-1.5">
+        <span *ngIf="selection.Vehicle_Area_Name" class="px-2 py-0.5 bg-gray-200 rounded text-xs">{{ selection.Vehicle_Area_Name }}</span>
+        <span *ngIf="selection.Part_Name" class="px-2 py-0.5 bg-gray-200 rounded text-xs">{{ selection.Part_Name }}</span>
+        <span *ngIf="selection.Defect_Name" class="px-2 py-0.5 bg-orange-100 text-orange-800 rounded text-xs">{{ selection.Defect_Name }}</span>
+        <span *ngIf="selection.Location_Name" class="px-2 py-0.5 bg-gray-200 rounded text-xs">{{ selection.Location_Name }}</span>
+        <span *ngIf="selection.Severity_Code" class="px-2 py-0.5 bg-red-100 text-red-800 rounded text-xs font-mono">{{ selection.Severity_Code }}</span>
+        <span *ngIf="selection.Attribution_Name" class="px-2 py-0.5 bg-gray-200 rounded text-xs">{{ selection.Attribution_Name }}</span>
+        <span *ngIf="selection.Defect_Type_Name" class="px-2 py-0.5 bg-gray-200 rounded text-xs">{{ selection.Defect_Type_Name }}</span>
+      </span>
+    </ng-container>
+    <ng-template #nothingPicked>
+      <span class="text-xs text-gray-400 italic">Tap from each column to build a concern.</span>
+    </ng-template>
+  </div>
+
+  <!-- Remark + actions -->
+  <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+    <div class="md:col-span-9">
+      <label class="block text-xs text-gray-600 mb-1">Remark (optional)</label>
+      <textarea
+        [(ngModel)]="remark"
+        rows="2"
+        placeholder="Optional notes about this concern…"
+        class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+      ></textarea>
+    </div>
+    <div class="md:col-span-3 flex md:flex-col gap-2 md:justify-end">
+      <button
+        type="button"
+        (click)="editingDefectEntryId ? cancelEdit() : clearSelection()"
+        class="px-4 py-2.5 rounded-md font-medium text-sm"
+        [ngClass]="editingDefectEntryId
+          ? 'bg-amber-100 hover:bg-amber-200 text-amber-900'
+          : 'bg-gray-200 hover:bg-gray-300 text-gray-800'"
+      >
+        {{ editingDefectEntryId ? 'Cancel Edit' : 'Clear' }}
+      </button>
+      <button
+        type="button"
+        (click)="emitSubmit()"
+        [disabled]="!isValid() || saving"
+        class="px-4 py-3 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-md font-semibold text-sm whitespace-nowrap"
+        [ngClass]="editingDefectEntryId
+          ? 'bg-amber-600 hover:bg-amber-700'
+          : 'bg-blue-600 hover:bg-blue-700'"
+      >
+        {{ saving ? 'Saving…' : (editingDefectEntryId ? '✓ Update Concern' : '+ Add Concern') }}
+      </button>
+    </div>
+  </div>
+
+  </ng-container>
+
+  <!-- Concerns table -->
+  <div *ngIf="concerns.length" class="bg-white border border-gray-200 rounded-md overflow-hidden">
+    <div class="bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-700 border-b">
+      Concerns added · {{ concerns.length }}
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-50 text-gray-700">
+          <tr>
+            <th class="px-3 py-2 text-left font-semibold w-10">#</th>
+            <th *ngIf="showStageColumn" class="px-3 py-2 text-left font-semibold">Stage</th>
+            <th class="px-3 py-2 text-left font-semibold">Area</th>
+            <th class="px-3 py-2 text-left font-semibold">Part</th>
+            <th class="px-3 py-2 text-left font-semibold">Defect</th>
+            <th class="px-3 py-2 text-left font-semibold">Location</th>
+            <th class="px-3 py-2 text-left font-semibold">Severity</th>
+            <th class="px-3 py-2 text-left font-semibold">Attribution</th>
+            <th class="px-3 py-2 text-left font-semibold">Defect Type</th>
+            <th class="px-3 py-2 text-left font-semibold">Remark</th>
+            <th class="px-3 py-2 text-center font-semibold w-24">Action</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          <tr
+            *ngFor="let c of concerns; let i = index"
+            class="hover:bg-gray-50"
+            [class.bg-amber-50]="editingDefectEntryId === c.Defect_Entry_ID"
+            [class.bg-gray-50]="c.Rework_Done"
+            [class.opacity-75]="c.Rework_Done"
+          >
+            <td class="px-3 py-2 text-gray-500 font-medium">
+              <div class="flex items-center gap-1">
+                <span>{{ i + 1 }}</span>
+                <svg
+                  *ngIf="c.Rework_Done"
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-4 w-4 text-gray-500"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  title="Reworked — locked"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 11c0-2.21-1.79-4-4-4S4 8.79 4 11M5 11h14a1 1 0 011 1v8a1 1 0 01-1 1H5a1 1 0 01-1-1v-8a1 1 0 011-1z" />
+                </svg>
+              </div>
+            </td>
+            <td *ngIf="showStageColumn" class="px-3 py-2 text-gray-700 font-medium">
+              {{ c.Audit_Area_Name || '—' }}
+            </td>
+            <td class="px-3 py-2 text-gray-700">{{ c.Vehicle_Area_Name || '—' }}</td>
+            <td class="px-3 py-2 text-gray-800 font-medium">{{ c.Part_Name }}</td>
+            <td class="px-3 py-2 text-gray-700">{{ c.Defect_Name }}</td>
+            <td class="px-3 py-2 text-gray-700">{{ c.Location_Name }}</td>
+            <td class="px-3 py-2">
+              <span class="font-mono font-semibold text-gray-700">{{ c.Severity_Code }}</span>
+            </td>
+            <td class="px-3 py-2 text-gray-700">{{ c.Attribution_Name }}</td>
+            <td class="px-3 py-2 text-gray-700">{{ c.Defect_Type_Name }}</td>
+            <td class="px-3 py-2 text-gray-600 italic max-w-xs truncate" [title]="c.Remark">
+              {{ c.Remark || '—' }}
+            </td>
+            <td class="px-3 py-2 text-center whitespace-nowrap">
+              <div class="flex justify-center gap-2">
+                <button
+                  type="button"
+                  (click)="startEdit(i)"
+                  [disabled]="!c.Defect_Entry_ID || editingDefectEntryId === c.Defect_Entry_ID || c.Rework_Done || locked"
+                  class="p-2 text-blue-600 hover:bg-blue-200 disabled:text-gray-300 disabled:hover:bg-transparent disabled:cursor-not-allowed rounded-md transition-colors"
+                  [title]="locked ? 'Vehicle RFD — locked' : (c.Rework_Done ? 'Reworked — locked' : 'Edit')"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                    />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  (click)="emitRemove(i)"
+                  [disabled]="c.Rework_Done || locked"
+                  class="p-2 text-red-600 hover:bg-red-200 disabled:text-gray-300 disabled:hover:bg-transparent disabled:cursor-not-allowed rounded-md transition-colors"
+                  [title]="locked ? 'Vehicle RFD — locked' : (c.Rework_Done ? 'Reworked — locked' : 'Delete')"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

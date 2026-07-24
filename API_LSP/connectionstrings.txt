@@ -1,0 +1,25 @@
+
+
+Nashik - A003
+
+"BaseUrl": "http://10.3.48.39:2443/PQLSP",
+"ReportURL": "http://mmnsk1drsv/DronaRep/reportserver?/PQ Dashboard/LSP/LSPReport&rs:Command=Render&rs:Format=PDF&Concern_ID="
+
+"DefaultConnection": "Server=10.3.48.51;Database=PQ_LSP;User Id=DRONAADMIN;Password=admin#123;Integrated Security=False;Trusted_Connection=false;MultipleActiveResultSets=true;TrustServerCertificate=True",
+
+
+
+ Chakan - CK01
+
+ "BaseUrl": "http://10.192.68.77:2443/PQLSP",
+  "ReportURL": "http://mvml-drnrs/DronaRep/reportserver?/PQ Dashboard/LSP/LSPReport&rs:Command=Render&rs:Format=PDF&Concern_ID="
+
+ "DefaultConnection": "Server=10.192.68.78;Database=PQ_LSP;User Id=DRONAADMIN;Password=admin#123;Integrated Security=False;Trusted_Connection=false;MultipleActiveResultSets=true;TrustServerCertificate=True"
+
+
+  Haridwar - A010
+
+ "BaseUrl": "http://10.62.7.50:2443/PQLSP",
+  "ReportURL": "http://mmhrddrnrs/DronaRep/reportserver?/PQ Dashboard/LSP/LSPReport&rs:Command=Render&rs:Format=PDF&Concern_ID="
+
+ "DefaultConnection": "Server=10.62.7.50;Database=PQ_LSP;User Id=DRONAADMIN;Password=admin#123;Integrated Security=False;Trusted_Connection=false;MultipleActiveResultSets=true;TrustServerCertificate=True"

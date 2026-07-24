@@ -1,0 +1,287 @@
+<div class="p-4 md:p-6 mx-auto">
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-lg md:text-xl font-bold text-gray-800">Rework Queue</h2>
+    <div class="text-sm text-gray-500">
+      Pending concerns:
+      <span class="font-semibold text-gray-700">{{ rows.length }}</span>
+    </div>
+  </div>
+
+  <!-- Filter bar card -->
+  <div class="bg-white rounded-lg shadow-md p-4 mb-4">
+    <div class="flex flex-col md:flex-row gap-3 md:items-end">
+      <!-- Attribution dropdown -->
+      <div class="w-full md:w-72">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Attribution</label>
+        <select
+          name="attribution"
+          [(ngModel)]="selectedAttributionId"
+          (ngModelChange)="onAttributionChange()"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option [ngValue]="0">All attributions</option>
+          <option *ngFor="let a of attributions" [ngValue]="a.Attribution_ID">
+            {{ a.Attribution_Name }}
+          </option>
+        </select>
+      </div>
+
+      <!-- VIN search -->
+      <div class="w-full md:flex-1 md:max-w-md">
+        <label class="block text-sm font-medium text-gray-700 mb-1">VIN (full or last 8)</label>
+        <div class="flex gap-2">
+          <input
+            type="text"
+            name="vin"
+            [(ngModel)]="vinFilter"
+            (keyup.enter)="onVinSearch()"
+            placeholder="Scan or type VIN…"
+            class="flex-1 px-3 py-2 uppercase tracking-wider border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            autocomplete="off"
+          />
+          <button
+            type="button"
+            (click)="onVinSearch()"
+            class="px-4 py-2 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+          >
+            Search
+          </button>
+        </div>
+      </div>
+
+      <!-- Clear + Refresh -->
+      <div class="flex gap-2">
+        <button
+          type="button"
+          (click)="clearFilters()"
+          class="px-4 py-2 text-sm font-medium rounded-md text-gray-700 bg-gray-200 hover:bg-gray-300"
+        >
+          Clear
+        </button>
+        <button
+          type="button"
+          (click)="reload()"
+          [disabled]="loading"
+          class="px-4 py-2 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300"
+        >
+          {{ loading ? 'Loading…' : '⟳ Refresh' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main rework card (mirrors the in-stage Rework page) -->
+  <div class="bg-white rounded-lg shadow-md p-6 mb-4">
+    <!-- Stage-style header -->
+    <div class="flex items-center justify-between mb-4 pb-3 border-b">
+      <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+        <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white text-sm font-bold">
+          9
+        </span>
+        Rework
+      </h3>
+      <span class="text-xs text-gray-500">
+        Attribution:
+        <span class="font-semibold text-gray-700">
+          {{ selectedAttributionId
+              ? (attributionLabel(selectedAttributionId))
+              : 'All attributions' }}
+        </span>
+        <span *ngIf="vinFilter" class="ml-3 pl-3 border-l border-gray-300">
+          VIN filter:
+          <span class="font-semibold text-gray-700">{{ vinFilter }}</span>
+        </span>
+      </span>
+    </div>
+
+    <!-- Counters strip -->
+    <div *ngIf="rows.length" class="flex flex-wrap items-center gap-2 mb-3 text-xs">
+      <span class="px-2 py-1 rounded bg-amber-100 text-amber-800 font-medium">
+        Pending: {{ rows.length }}
+      </span>
+    </div>
+
+    <!-- Concerns table -->
+    <div>
+      <h4 class="text-base font-semibold text-gray-800 mb-3 border-l-4 border-orange-500 pl-2">
+        Concerns to rework
+      </h4>
+
+      <p *ngIf="!loading && !rows.length" class="text-sm text-gray-500 italic">
+        No pending concerns match the current filter.
+      </p>
+
+      <p *ngIf="loading" class="text-sm text-blue-600">Loading concerns…</p>
+
+      <div *ngIf="rows.length" class="overflow-x-auto bg-white border border-gray-200 rounded-md">
+        <table class="min-w-full text-sm">
+          <thead class="bg-gray-50 text-gray-700">
+            <tr>
+              <th class="px-3 py-2 text-left font-semibold w-10">#</th>
+              <th class="px-3 py-2 text-left font-semibold">VIN</th>
+              <th class="px-3 py-2 text-left font-semibold">Stage</th>
+              <th class="px-3 py-2 text-left font-semibold">Area</th>
+              <th class="px-3 py-2 text-left font-semibold">Part</th>
+              <th class="px-3 py-2 text-left font-semibold">Defect</th>
+              <th class="px-3 py-2 text-left font-semibold">Location</th>
+              <th class="px-3 py-2 text-left font-semibold">Severity</th>
+              <th class="px-3 py-2 text-left font-semibold">Attribution</th>
+              <th class="px-3 py-2 text-left font-semibold">Defect Type</th>
+              <th class="px-3 py-2 text-left font-semibold">Remark</th>
+              <th class="px-3 py-2 text-center font-semibold w-28">Action</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            <tr
+              *ngFor="let row of rows; let i = index"
+              class="hover:bg-gray-50"
+            >
+              <td class="px-3 py-2 text-gray-500 font-medium">{{ i + 1 }}</td>
+              <td
+                class="px-3 py-2 text-gray-800 font-mono font-semibold"
+                [title]="row.VIN_No"
+              >
+                …{{ last8(row.VIN_No) }}
+              </td>
+              <td class="px-3 py-2 text-gray-700 font-medium">{{ row.Audit_Area_Name }}</td>
+              <td class="px-3 py-2 text-gray-700">{{ row.Vehicle_Area_Name || '—' }}</td>
+              <td class="px-3 py-2 text-gray-800 font-medium">{{ row.Part_Name }}</td>
+              <td class="px-3 py-2 text-gray-700">{{ row.Defect_Name }}</td>
+              <td class="px-3 py-2 text-gray-700">{{ row.Location_Name }}</td>
+              <td class="px-3 py-2">
+                <span class="font-mono font-semibold text-gray-700">{{ row.Severity_Code || '—' }}</span>
+              </td>
+              <td class="px-3 py-2 text-gray-700">{{ row.Attribution_Name || '—' }}</td>
+              <td class="px-3 py-2 text-gray-700">{{ row.Defect_Type_Name || '—' }}</td>
+              <td class="px-3 py-2 text-gray-600 italic max-w-xs truncate" [title]="row.Remark || ''">
+                {{ row.Remark || '—' }}
+              </td>
+
+              <!-- Rework action — opens modal -->
+              <td class="px-3 py-2 text-center">
+                <button
+                  type="button"
+                  (click)="openReworkModal(row)"
+                  class="px-3 py-1.5 rounded-md text-white text-xs font-semibold bg-emerald-600 hover:bg-emerald-700"
+                >
+                  🛠 Rework
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────── Rework modal ─────────────────────────── -->
+  <div
+    *ngIf="activeRow"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+    (click)="closeModal()"
+  >
+    <div
+      class="bg-white rounded-lg shadow-2xl w-full max-w-lg"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="px-5 py-3 border-b flex items-center justify-between">
+        <h3 class="text-base font-bold text-gray-800">
+          Rework — {{ activeRow.Part_Name }}
+        </h3>
+        <button
+          type="button"
+          (click)="closeModal()"
+          class="text-gray-400 hover:text-gray-700 text-xl leading-none"
+          aria-label="Close"
+        >
+          ×
+        </button>
+      </div>
+
+      <div class="px-5 py-4">
+        <!-- Concern context strip -->
+        <div class="bg-gray-50 border border-gray-200 rounded-md px-3 py-2 mb-4 text-xs text-gray-700">
+          <div>
+            <span class="font-semibold">VIN:</span>
+            <span class="font-mono ml-1">…{{ last8(activeRow.VIN_No) }}</span>
+          </div>
+          <div><span class="font-semibold">Stage:</span> {{ activeRow.Audit_Area_Name }}</div>
+          <div>
+            <span class="font-semibold">Defect:</span> {{ activeRow.Defect_Name }}
+            <span *ngIf="activeRow.Location_Name"> · {{ activeRow.Location_Name }}</span>
+            <span *ngIf="activeRow.Severity_Code" class="font-mono ml-1">({{ activeRow.Severity_Code }})</span>
+          </div>
+          <div *ngIf="activeRow.Remark" class="italic text-gray-600 mt-1">
+            "{{ activeRow.Remark }}"
+          </div>
+        </div>
+
+        <!-- Rework Done -->
+        <label class="flex items-center gap-2 mb-4 cursor-pointer">
+          <input
+            type="checkbox"
+            [(ngModel)]="draft.Rework_Done"
+            class="h-5 w-5 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
+          />
+          <span class="text-sm font-medium text-gray-800">Rework Done</span>
+        </label>
+
+        <!-- Rework By -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            Rework By <span class="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            [(ngModel)]="draft.Rework_By_Name"
+            list="reworkAuditorsList"
+            placeholder="Type or pick a name…"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            autocomplete="off"
+          />
+          <p class="text-xs text-gray-500 mt-1">
+            Pick from the list of registered auditors or type a new name.
+          </p>
+        </div>
+
+        <!-- Remark (multi-line) -->
+        <div class="mb-2">
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            What was done <span class="text-red-500">*</span>
+          </label>
+          <textarea
+            [(ngModel)]="draft.Rework_Remark"
+            rows="4"
+            placeholder="Describe the rework performed…"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="px-5 py-3 border-t bg-gray-50 flex items-center justify-end gap-2">
+        <button
+          type="button"
+          (click)="closeModal()"
+          class="px-4 py-2 rounded-md text-sm font-medium bg-white border border-gray-300 text-gray-700 hover:bg-gray-100"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          (click)="saveModal()"
+          [disabled]="!canSaveModal()"
+          class="px-4 py-2 rounded-md text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+        >
+          {{ savingModal ? 'Saving…' : '✓ Save Rework' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shared datalist — every row offers the same set of registered rework
+       auditors, but free-text entries are accepted. -->
+  <datalist id="reworkAuditorsList">
+    <option *ngFor="let a of reworkAuditors" [value]="a.Auditor_Name"></option>
+  </datalist>
+</div>

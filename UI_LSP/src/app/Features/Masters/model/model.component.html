@@ -1,0 +1,136 @@
+<div class="container mx-auto p-6">
+  <!-- Header -->
+  <div class="mb-6">
+    <h1 class="text-3xl font-bold text-gray-800">Model Master</h1>
+    <p class="text-gray-600 text-base mt-1">
+      Manage Models LSP active status. Toggle the checkbox to activate or deactivate LSP for each Model.
+    </p>
+  </div>
+
+  <!-- Table Card -->
+  <div class="bg-white rounded-lg shadow-md overflow-hidden">
+    <div class="p-6 border-b border-gray-200">
+      <div
+        class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4"
+      >
+        <!-- Search Bar -->
+        <div class="relative w-full">
+          <div
+            class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+          >
+            <svg
+              class="h-5 w-5 text-gray-400"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+          </div>
+          <input
+            [(ngModel)]="dataSearch"
+            type="text"
+            class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            placeholder="Search Models..."
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-100">
+        <tr>
+          <th
+            class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider"
+          >
+            Sr. No.
+          </th>
+          <th
+            class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider"
+          >
+            Model Name
+          </th>
+          <!-- <th
+            class="px-6 py-3 text-center text-xs font-bold text-gray-600 uppercase tracking-wider"
+          >
+            LSP Active
+          </th> -->
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        @for (row of ModelList | search: dataSearch; track $index) {
+          <!-- Sample Row 1 -->
+          <tr class="hover:bg-blue-50 transition-colors">
+            <td
+              class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
+            >
+              {{ $index + 1 }}
+            </td>
+
+            <td
+              class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
+            >
+              {{ row.Model_Name }}
+            </td>
+            <!-- <td
+              class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900"
+            >
+              <label
+                class="inline-flex items-center space-x-3 cursor-pointer group font-bold"
+              >
+                <input
+                  type="checkbox"
+                  [(ngModel)]="row.Is_LSP_Active"
+                  (click)="saveEdit(row)"
+                  class="form-checkbox h-5 w-5 text-green-600 transition duration-200 ease-in-out border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:outline-none"
+                />
+                <span
+                  [ngClass]="{
+                    'text-green-600  text-sm group-hover:text-green-600':
+                      row.Is_LSP_Active,
+                    'text-red-600  text-sm group-hover:text-red-600':
+                      !row.Is_LSP_Active
+                  }"
+                >
+                  {{ row.Is_LSP_Active ? "Active" : "In Active" }}
+                </span>
+              </label>
+            </td> -->
+          </tr>
+        } @empty {
+          <!-- Empty State (Show when no data) -->
+          <tr>
+            <td colspan="4" class="px-6 py-12 text-center text-gray-500">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-12 w-12 mx-auto mb-3 text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+                />
+              </svg>
+              <p class="text-sm">No Models found</p>
+              <p class="text-xs text-gray-400 mt-1">
+                Add a new Model to get started
+              </p>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

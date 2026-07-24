@@ -1,0 +1,212 @@
+<div class="bg-white rounded-lg shadow-md p-6 mb-4">
+  <!-- Stage header -->
+  <div class="flex items-center justify-between mb-4 pb-3 border-b">
+    <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+      <span class="inline-flex items-center justify-center w-8 h-8 rounded-full border-2 border-blue-600 text-base font-bold leading-none">
+        🔁
+      </span>
+      Recheck
+    </h3>
+    <span class="text-xs text-gray-500">
+      Vehicle: <span class="font-semibold text-gray-700">{{ vehicle?.VIN_No }}</span>
+      <span *ngIf="logDate" class="ml-3 pl-3 border-l border-gray-300">
+        Saved: <span class="font-semibold text-gray-700">{{ logDate | date:'medium' }}</span>
+      </span>
+    </span>
+  </div>
+
+  <!-- Auditor + Save -->
+  <fieldset [disabled]="locked" class="flex flex-col md:flex-row md:items-end gap-4 mb-6 disabled:opacity-60">
+    <div class="w-full md:w-96">
+      <label class="block text-sm font-medium text-gray-700 mb-1">
+        Recheck Auditor <span class="text-red-500">*</span>
+      </label>
+      <select
+        name="auditor"
+        [(ngModel)]="selectedAuditorId"
+        (ngModelChange)="onAuditorChange()"
+        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        <option [ngValue]="0">-- Select Auditor --</option>
+        <option *ngFor="let a of auditors" [ngValue]="a.Auditor_ID">
+          {{ a.Auditor_Name }}
+        </option>
+      </select>
+    </div>
+
+    <div class="md:ml-auto">
+      <button
+        type="button"
+        (click)="save()"
+        [disabled]="!canSave()"
+        class="px-5 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-md font-semibold whitespace-nowrap"
+      >
+        {{ saving ? 'Saving…' : '✓ Verify & Save' }}
+      </button>
+    </div>
+  </fieldset>
+
+  <!-- Status stages — all audited stages in sort order -->
+  <div class="border-t pt-4 mb-6">
+    <h4 class="text-base font-semibold text-gray-800 mb-3 border-l-4 border-blue-500 pl-2">
+      Stage Status
+    </h4>
+
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm border border-gray-200 rounded">
+        <thead class="bg-gray-50 text-gray-700">
+          <tr>
+            <th class="px-3 py-2 text-left font-semibold w-24">Stage</th>
+            <th class="px-3 py-2 text-left font-semibold">Auditor</th>
+            <th class="px-3 py-2 text-left font-semibold w-28">Status</th>
+            <th class="px-3 py-2 text-left font-semibold w-44">Saved</th>
+            <th class="px-3 py-2 text-center font-semibold w-32">Files</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          <tr *ngFor="let s of statusStages" class="hover:bg-gray-50">
+            <td class="px-3 py-2 font-semibold text-gray-800">{{ s.Audit_Area_Name }}</td>
+            <td class="px-3 py-2 text-gray-700">{{ s.Auditor_Name || '—' }}</td>
+            <td class="px-3 py-2">
+              <span class="px-2 py-0.5 rounded text-xs font-semibold" [ngClass]="statusCls(s)">
+                {{ statusLabel(s) }}
+              </span>
+            </td>
+            <td class="px-3 py-2 text-xs text-gray-600">
+              {{ s.Log_Date ? (s.Log_Date | date:'dd-MMM-yyyy HH:mm') : '—' }}
+            </td>
+            <td class="px-3 py-2 text-center">
+              <button
+                type="button"
+                *ngIf="s.documents.length; else noFiles"
+                (click)="openFilesModal(s)"
+                class="inline-flex items-center gap-1 px-2 py-1 rounded text-blue-700 hover:bg-blue-100"
+                [title]="'View ' + s.documents.length + ' file(s)'"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 10-5.656-5.656L4.343 11a6 6 0 108.486 8.486L18 14.343" />
+                </svg>
+                <span class="text-xs font-semibold">{{ s.documents.length }}</span>
+              </button>
+              <ng-template #noFiles>
+                <span class="text-xs text-gray-400">—</span>
+              </ng-template>
+            </td>
+          </tr>
+          <tr *ngIf="!statusStages.length">
+            <td colspan="5" class="px-3 py-4 text-center text-sm text-gray-400 italic">
+              No status stages recorded yet.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Concerns across all stages -->
+  <div class="border-t pt-4">
+    <h4 class="text-base font-semibold text-gray-800 mb-3 border-l-4 border-orange-500 pl-2">
+      Concerns ({{ concerns.length }})
+    </h4>
+
+    <p *ngIf="!concerns.length" class="text-sm text-gray-500 italic">
+      No concerns recorded against this vehicle.
+    </p>
+
+    <app-defect-entry-form
+      *ngIf="concerns.length"
+      [concerns]="concerns"
+      [saving]="saving"
+      [pickerEnabled]="false"
+      [showStageColumn]="true"
+      [locked]="locked"
+      (updateRequest)="onUpdateRequest($event)"
+      (removeRequest)="onRemoveRequest($event)"
+    ></app-defect-entry-form>
+  </div>
+</div>
+
+<!-- Files modal -->
+<div
+  *ngIf="filesModalOpen && filesModalStage"
+  class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
+  (click)="closeFilesModal()"
+>
+  <div
+    class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[85vh] overflow-hidden flex flex-col"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="flex items-center justify-between px-4 py-3 border-b">
+      <h4 class="text-base font-bold text-gray-800">
+        {{ filesModalStage.Audit_Area_Name }} — Files
+        <span class="text-sm font-normal text-gray-500">
+          ({{ filesModalStage.documents.length }})
+        </span>
+      </h4>
+      <button
+        type="button"
+        (click)="closeFilesModal()"
+        class="text-gray-500 hover:text-gray-800 text-2xl leading-none"
+        title="Close"
+      >
+        ×
+      </button>
+    </div>
+
+    <div class="overflow-y-auto p-4">
+      <div *ngIf="filesModalStage.documents.length; else noModalFiles"
+           class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div
+          *ngFor="let f of filesModalStage.documents"
+          class="border border-gray-200 rounded-md bg-gray-50 overflow-hidden"
+        >
+          <a
+            *ngIf="isImage(f); else fileLink"
+            [href]="downloadUrlOf(filesModalStage.Audit_Area_ID, f)"
+            target="_blank"
+            rel="noopener"
+            class="block aspect-square bg-gray-100"
+          >
+            <img
+              [src]="downloadUrlOf(filesModalStage.Audit_Area_ID, f)"
+              [alt]="displayNameOf(f)"
+              class="w-full h-full object-cover"
+            />
+          </a>
+          <ng-template #fileLink>
+            <a
+              [href]="downloadUrlOf(filesModalStage.Audit_Area_ID, f)"
+              target="_blank"
+              rel="noopener"
+              class="flex flex-col items-center justify-center aspect-square bg-gray-100 text-gray-500 hover:bg-gray-200"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2z" />
+              </svg>
+              <span class="text-[10px] mt-1 px-1">File</span>
+            </a>
+          </ng-template>
+
+          <div class="px-2 py-1 text-[11px] text-gray-700 truncate" [title]="displayNameOf(f)">
+            {{ displayNameOf(f) }}
+          </div>
+        </div>
+      </div>
+      <ng-template #noModalFiles>
+        <p class="text-sm text-gray-500 italic text-center py-6">No files uploaded.</p>
+      </ng-template>
+    </div>
+
+    <div class="px-4 py-3 border-t flex justify-end">
+      <button
+        type="button"
+        (click)="closeFilesModal()"
+        class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-md text-sm font-medium"
+      >
+        Close
+      </button>
+    </div>
+  </div>
+</div>

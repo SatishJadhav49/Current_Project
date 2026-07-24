@@ -1,0 +1,338 @@
+<div class="container mx-auto p-6">
+  <!-- ═══════════════════════════ LIST VIEW ═══════════════════════════ -->
+  <ng-container *ngIf="view === 'list'">
+    <!-- Header -->
+    <div class="mb-6 flex items-start justify-between">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-800">Area Image Master</h1>
+        <p class="text-gray-600 text-base mt-1">
+          Upload vehicle area images and map part hotspots for the image-based
+          Paint Verification audit.
+        </p>
+      </div>
+      <button
+        *ngIf="!showForm"
+        type="button"
+        (click)="openCreate()"
+        class="px-4 py-2 rounded-md text-white text-sm font-semibold bg-blue-600 hover:bg-blue-700"
+      >
+        + Add Image
+      </button>
+    </div>
+
+    <!-- Create/Edit form card -->
+    <div *ngIf="showForm" class="bg-white rounded-lg shadow-md p-6 mb-6">
+      <h2 class="text-lg font-semibold text-gray-800 mb-4">
+        {{ editId > 0 ? 'Edit Area Image' : 'New Area Image' }}
+      </h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            Model <span class="text-red-500">*</span>
+          </label>
+          <select
+            [(ngModel)]="formModelId"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option [ngValue]="0">-- Select Model --</option>
+            <option *ngFor="let m of models" [ngValue]="m.Model_ID">
+              {{ m.Model_Name }}
+            </option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            Vehicle Area <span class="text-red-500">*</span>
+          </label>
+          <select
+            [(ngModel)]="formAreaId"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option [ngValue]="0">-- Select Area --</option>
+            <option *ngFor="let a of vehicleAreas" [ngValue]="a.Vehicle_Area_ID">
+              {{ a.Vehicle_Area_Name }}
+            </option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            Image Name <span class="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            [(ngModel)]="formName"
+            placeholder="e.g., Front View"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Sort Order</label>
+          <input
+            type="number"
+            [(ngModel)]="formSortOrder"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            Image File
+            <span *ngIf="editId === 0" class="text-red-500">*</span>
+            <span *ngIf="editId > 0" class="text-xs text-gray-500 font-normal">(optional — replaces current)</span>
+          </label>
+          <input
+            type="file"
+            accept="image/*"
+            (change)="onFileChosen($event)"
+            class="block w-full text-sm text-gray-700 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:cursor-pointer"
+          />
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 mt-4">
+        <button
+          type="button"
+          (click)="cancelForm()"
+          class="px-4 py-2 rounded-md text-sm font-medium bg-white border border-gray-300 text-gray-700 hover:bg-gray-100"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          (click)="saveForm()"
+          [disabled]="!canSaveForm()"
+          class="px-4 py-2 rounded-md text-sm font-semibold text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+        >
+          {{ saving ? 'Saving…' : (editId > 0 ? '✓ Update' : '✓ Save') }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Images table -->
+    <div class="bg-white rounded-lg shadow-md overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-50 text-gray-700">
+          <tr>
+            <th class="px-3 py-2 text-left font-semibold w-28">Preview</th>
+            <th class="px-3 py-2 text-left font-semibold">Model</th>
+            <th class="px-3 py-2 text-left font-semibold">Vehicle Area</th>
+            <th class="px-3 py-2 text-left font-semibold">Image Name</th>
+            <th class="px-3 py-2 text-center font-semibold w-24">Sort</th>
+            <th class="px-3 py-2 text-center font-semibold w-32">Mapped Parts</th>
+            <th class="px-3 py-2 text-center font-semibold w-56">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          <tr *ngFor="let row of images" class="hover:bg-gray-50">
+            <td class="px-3 py-2">
+              <img
+                [src]="imageUrl(row.Image_FileName)"
+                [alt]="row.Image_Name"
+                class="h-14 w-24 object-cover rounded border border-gray-200"
+              />
+            </td>
+            <td class="px-3 py-2 text-gray-800 font-semibold">
+              {{ row.Model_Name || '—' }}
+              <span *ngIf="!row.Model_ID"
+                class="ml-1 px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-semibold"
+                title="This image pre-dates model support — edit it and pick a model."
+              >no model</span>
+            </td>
+            <td class="px-3 py-2 text-gray-700 font-medium">{{ row.Vehicle_Area_Name }}</td>
+            <td class="px-3 py-2 text-gray-800 font-semibold">{{ row.Image_Name }}</td>
+            <td class="px-3 py-2 text-center text-gray-600">{{ row.SORTORDER }}</td>
+            <td class="px-3 py-2 text-center">
+              <span
+                class="px-2 py-0.5 rounded text-xs font-semibold"
+                [ngClass]="row.Mapping_Count > 0
+                  ? 'bg-emerald-100 text-emerald-800'
+                  : 'bg-amber-100 text-amber-800'"
+              >
+                {{ row.Mapping_Count }}
+              </span>
+            </td>
+            <td class="px-3 py-2 text-center whitespace-nowrap">
+              <button
+                type="button"
+                (click)="openMapper(row)"
+                class="px-3 py-1.5 rounded-md text-white text-xs font-semibold bg-blue-600 hover:bg-blue-700 mr-1"
+              >
+                🎯 Map Parts
+              </button>
+              <button
+                type="button"
+                (click)="openEdit(row)"
+                class="px-3 py-1.5 rounded-md text-xs font-semibold bg-gray-200 text-gray-800 hover:bg-gray-300 mr-1"
+              >
+                ✎ Edit
+              </button>
+              <button
+                type="button"
+                (click)="deleteImage(row)"
+                class="px-3 py-1.5 rounded-md text-xs font-semibold bg-red-100 text-red-700 hover:bg-red-200"
+              >
+                🗑 Delete
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="!loading && !images.length">
+            <td colspan="7" class="px-3 py-8 text-center text-gray-400 italic">
+              No area images uploaded yet. Click "+ Add Image" to start.
+            </td>
+          </tr>
+          <tr *ngIf="loading">
+            <td colspan="7" class="px-3 py-8 text-center text-blue-600">Loading…</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </ng-container>
+
+  <!-- ═══════════════════════════ MAPPER VIEW ═══════════════════════════ -->
+  <ng-container *ngIf="view === 'mapper' && activeImage">
+    <!-- Header -->
+    <div class="mb-4 flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-800">
+          🎯 Map Parts — {{ activeImage.Image_Name }}
+        </h1>
+        <p class="text-gray-600 text-sm mt-1">
+          Model: <span class="font-semibold">{{ activeImage.Model_Name || '—' }}</span>
+          · Area: <span class="font-semibold">{{ activeImage.Vehicle_Area_Name }}</span>
+          — pick a part, then drag a box over it on the image.
+        </p>
+      </div>
+      <button
+        type="button"
+        (click)="closeMapper()"
+        class="px-4 py-2 rounded-md text-sm font-medium bg-gray-200 text-gray-800 hover:bg-gray-300"
+      >
+        ← Back to list
+      </button>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <!-- Image canvas (2/3) -->
+      <div class="lg:col-span-2 bg-white rounded-lg shadow-md p-4">
+        <!-- Part picker toolbar -->
+        <div class="flex items-end gap-3 mb-3">
+          <div class="w-full md:w-96">
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              Part to map <span class="text-red-500">*</span>
+            </label>
+            <select
+              [(ngModel)]="selectedPartId"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option [ngValue]="0">-- Select Part --</option>
+              <option *ngFor="let p of parts" [ngValue]="p.Part_ID">
+                {{ p.Part_Name }}
+              </option>
+            </select>
+          </div>
+          <span *ngIf="savingMapping" class="text-sm text-blue-600 pb-2">Saving…</span>
+        </div>
+
+        <!-- Image + SVG overlay. touch-none prevents scroll-while-drawing on tablets. -->
+        <div
+          class="relative select-none touch-none"
+          [class.cursor-crosshair]="selectedPartId > 0"
+          (mousedown)="onMapperMouseDown($event)"
+          (mousemove)="onMapperMouseMove($event)"
+          (mouseup)="onMapperMouseUp()"
+          (mouseleave)="onMapperMouseLeave()"
+        >
+          <img
+            #imgEl
+            [src]="imageUrl(activeImage.Image_FileName)"
+            [alt]="activeImage.Image_Name"
+            class="w-full block rounded border border-gray-200 pointer-events-none"
+            draggable="false"
+          />
+          <svg
+            class="absolute inset-0 w-full h-full pointer-events-none"
+            viewBox="0 0 1000 1000"
+            preserveAspectRatio="none"
+          >
+            <!-- Existing hotspots -->
+            <g *ngFor="let m of mappings">
+              <rect
+                [attr.x]="m.x * 1000"
+                [attr.y]="m.y * 1000"
+                [attr.width]="m.w * 1000"
+                [attr.height]="m.h * 1000"
+                [attr.fill]="hoveredMappingId === m.Mapping_ID ? 'rgba(37,99,235,0.35)' : 'rgba(37,99,235,0.15)'"
+                stroke="#2563eb"
+                stroke-width="3"
+                vector-effect="non-scaling-stroke"
+              />
+              <text
+                [attr.x]="m.x * 1000 + 8"
+                [attr.y]="m.y * 1000 + 30"
+                fill="#1e40af"
+                font-size="26"
+                font-weight="bold"
+                style="paint-order: stroke; stroke: white; stroke-width: 5px;"
+              >
+                {{ m.Part_Name }}
+              </text>
+            </g>
+
+            <!-- In-progress drag box -->
+            <rect
+              *ngIf="drawRect"
+              [attr.x]="drawRect.x * 1000"
+              [attr.y]="drawRect.y * 1000"
+              [attr.width]="drawRect.w * 1000"
+              [attr.height]="drawRect.h * 1000"
+              fill="rgba(16,185,129,0.2)"
+              stroke="#059669"
+              stroke-width="3"
+              stroke-dasharray="8 4"
+              vector-effect="non-scaling-stroke"
+            />
+          </svg>
+        </div>
+
+        <p class="text-xs text-gray-500 mt-2">
+          Tip: boxes are stored as fractions of the image, so they stay accurate
+          on any screen size. Overlapping boxes are fine — the smallest box wins
+          on the audit screen.
+        </p>
+      </div>
+
+      <!-- Mapped parts list (1/3) -->
+      <div class="bg-white rounded-lg shadow-md p-4">
+        <h3 class="text-base font-semibold text-gray-800 mb-3 border-l-4 border-blue-500 pl-2">
+          Mapped Parts ({{ mappings.length }})
+        </h3>
+
+        <p *ngIf="!mappings.length" class="text-sm text-gray-400 italic">
+          Nothing mapped yet. Select a part and drag a box on the image.
+        </p>
+
+        <ul class="divide-y divide-gray-100">
+          <li
+            *ngFor="let m of mappings"
+            class="flex items-center justify-between py-2 px-1 rounded hover:bg-blue-50"
+            (mouseenter)="hoveredMappingId = m.Mapping_ID"
+            (mouseleave)="hoveredMappingId = 0"
+          >
+            <span class="text-sm text-gray-800 font-medium">{{ m.Part_Name }}</span>
+            <button
+              type="button"
+              (click)="deleteMapping(m)"
+              class="px-2 py-1 rounded text-xs font-semibold bg-red-100 text-red-700 hover:bg-red-200"
+              title="Remove hotspot"
+            >
+              🗑
+            </button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </ng-container>
+</div>

@@ -1,0 +1,175 @@
+<div class="p-4 md:p-6 mx-auto">
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-lg md:text-xl font-bold text-gray-800">Vehicle Tracking Report</h2>
+    <div class="text-sm text-gray-500" *ngIf="searched && !loading">
+      Vehicles:
+      <span class="font-semibold text-gray-700">{{ rows.length }}</span>
+    </div>
+  </div>
+
+  <!-- Filter bar card -->
+  <div class="bg-white rounded-lg shadow-md p-4 mb-4">
+    <div class="flex flex-col md:flex-row gap-3 md:items-end">
+      <!-- Model dropdown -->
+      <div class="w-full md:w-64">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Model <span class="text-red-500">*</span></label>
+        <select
+          name="model"
+          [(ngModel)]="selectedModelId"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option [ngValue]="0">Select model…</option>
+          <option *ngFor="let m of models" [ngValue]="m.Model_ID">
+            {{ m.Model_Name }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Start date -->
+      <div class="w-full md:w-44">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Start Date <span class="text-red-500">*</span></label>
+        <input
+          type="date"
+          name="startDate"
+          [(ngModel)]="startDate"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
+      <!-- End date -->
+      <div class="w-full md:w-44">
+        <label class="block text-sm font-medium text-gray-700 mb-1">End Date <span class="text-red-500">*</span></label>
+        <input
+          type="date"
+          name="endDate"
+          [(ngModel)]="endDate"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
+      <!-- Actions -->
+      <div class="flex gap-2">
+        <button
+          type="button"
+          (click)="search()"
+          [disabled]="loading"
+          class="px-4 py-2 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300"
+        >
+          {{ loading ? 'Loading…' : 'Search' }}
+        </button>
+        <button
+          type="button"
+          (click)="clear()"
+          class="px-4 py-2 text-sm font-medium rounded-md text-gray-700 bg-gray-200 hover:bg-gray-300"
+        >
+          Clear
+        </button>
+        <button
+          type="button"
+          (click)="downloadExcel()"
+          [disabled]="rows.length === 0"
+          class="px-4 py-2 text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300"
+        >
+          ⬇ Download Excel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results card -->
+  <div class="bg-white rounded-lg shadow-md p-4">
+    <!-- Loading -->
+    <div *ngIf="loading" class="py-12 text-center text-gray-500">
+      Loading report…
+    </div>
+
+    <!-- Empty state -->
+    <div *ngIf="!loading && searched && rows.length === 0" class="py-12 text-center text-gray-500">
+      No vehicles found for the selected model and date range.
+    </div>
+
+    <!-- Prompt state (before first search) -->
+    <div *ngIf="!loading && !searched" class="py-12 text-center text-gray-400">
+      Select a model and date range, then click <span class="font-medium">Search</span>.
+    </div>
+
+    <!-- Table -->
+    <div *ngIf="!loading && rows.length > 0" class="overflow-x-auto">
+      <table class="min-w-full text-xs border-collapse">
+        <thead>
+          <tr class="bg-gray-100 text-gray-700">
+            <th class="px-2 py-2 text-left font-semibold border">Sr.</th>
+            <th class="px-2 py-2 text-left font-semibold border whitespace-nowrap">VIN No</th>
+            <th class="px-2 py-2 text-left font-semibold border whitespace-nowrap">Body Serial No</th>
+            <th class="px-2 py-2 text-left font-semibold border whitespace-nowrap">Model</th>
+            <th class="px-2 py-2 text-left font-semibold border whitespace-nowrap">Model Desc</th>
+            <th class="px-2 py-2 text-left font-semibold border">Variant</th>
+            <th class="px-2 py-2 text-left font-semibold border">Color</th>
+            <th class="px-2 py-2 text-left font-semibold border whitespace-nowrap">Engine No</th>
+            <th class="px-2 py-2 text-left font-semibold border whitespace-nowrap">Build Phase</th>
+            <th class="px-2 py-2 text-left font-semibold border">Drive</th>
+            <th class="px-2 py-2 text-left font-semibold border">Fuel</th>
+            <th class="px-2 py-2 text-left font-semibold border">Country</th>
+            <th class="px-2 py-2 text-left font-semibold border whitespace-nowrap">Roll Down</th>
+            <th class="px-2 py-2 text-left font-semibold border whitespace-nowrap">CAI OK</th>
+            <th class="px-2 py-2 text-left font-semibold border whitespace-nowrap">Road Test</th>
+            <th class="px-2 py-2 text-center font-semibold border">RT</th>
+            <th class="px-2 py-2 text-left font-semibold border whitespace-nowrap">Under Body</th>
+            <th class="px-2 py-2 text-center font-semibold border">UB</th>
+            <th class="px-2 py-2 text-left font-semibold border whitespace-nowrap">DTC</th>
+            <th class="px-2 py-2 text-center font-semibold border">DTC</th>
+            <th class="px-2 py-2 text-left font-semibold border whitespace-nowrap">Shower</th>
+            <th class="px-2 py-2 text-center font-semibold border">SH</th>
+            <th class="px-2 py-2 text-left font-semibold border whitespace-nowrap">Static Audit</th>
+            <th class="px-2 py-2 text-center font-semibold border">SA</th>
+            <th class="px-2 py-2 text-left font-semibold border whitespace-nowrap">VMS</th>
+            <th class="px-2 py-2 text-center font-semibold border">VMS</th>
+            <th class="px-2 py-2 text-left font-semibold border whitespace-nowrap">Paint</th>
+            <th class="px-2 py-2 text-center font-semibold border">PT</th>
+            <th class="px-2 py-2 text-center font-semibold border">Recheck</th>
+            <th class="px-2 py-2 text-center font-semibold border">Rework</th>
+            <th class="px-2 py-2 text-left font-semibold border whitespace-nowrap">RFD Date</th>
+            <th class="px-2 py-2 text-center font-semibold border">RFD</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let r of rows; let i = index" class="hover:bg-gray-50">
+            <td class="px-2 py-1.5 border text-gray-500">{{ i + 1 }}</td>
+            <td class="px-2 py-1.5 border font-medium text-gray-800 whitespace-nowrap">{{ r.VIN_No }}</td>
+            <td class="px-2 py-1.5 border whitespace-nowrap">{{ r.Body_Serial_No }}</td>
+            <td class="px-2 py-1.5 border whitespace-nowrap">{{ r.Model_Name }}</td>
+            <td class="px-2 py-1.5 border whitespace-nowrap">{{ r.Model_Desc }}</td>
+            <td class="px-2 py-1.5 border">{{ r.Variant }}</td>
+            <td class="px-2 py-1.5 border">{{ r.Colour_Desc }}</td>
+            <td class="px-2 py-1.5 border whitespace-nowrap">{{ r.Engine_No }}</td>
+            <td class="px-2 py-1.5 border whitespace-nowrap">{{ r.Build_Phase_Name }}</td>
+            <td class="px-2 py-1.5 border">{{ r.Drive_Name }}</td>
+            <td class="px-2 py-1.5 border">{{ r.Fuel_Name }}</td>
+            <td class="px-2 py-1.5 border">{{ r.Country_Name }}</td>
+            <td class="px-2 py-1.5 border whitespace-nowrap">{{ fmtDate(r.Roll_Down_Date) }}</td>
+            <td class="px-2 py-1.5 border whitespace-nowrap">{{ fmtDate(r.CAI_OK_Date) }}</td>
+            <td class="px-2 py-1.5 border whitespace-nowrap">{{ fmtDate(r.RoadTest_Date) }}</td>
+            <td class="px-2 py-1.5 border text-center"><span class="px-1.5 py-0.5 rounded text-[11px] font-medium" [ngClass]="statusClass(r.RoadTest_Status)">{{ r.RoadTest_Status }}</span></td>
+            <td class="px-2 py-1.5 border whitespace-nowrap">{{ fmtDate(r.UnderBody_Date) }}</td>
+            <td class="px-2 py-1.5 border text-center"><span class="px-1.5 py-0.5 rounded text-[11px] font-medium" [ngClass]="statusClass(r.UnderBody_Status)">{{ r.UnderBody_Status }}</span></td>
+            <td class="px-2 py-1.5 border whitespace-nowrap">{{ fmtDate(r.Dtc_Date) }}</td>
+            <td class="px-2 py-1.5 border text-center"><span class="px-1.5 py-0.5 rounded text-[11px] font-medium" [ngClass]="statusClass(r.Dtc_Status)">{{ r.Dtc_Status }}</span></td>
+            <td class="px-2 py-1.5 border whitespace-nowrap">{{ fmtDate(r.Shower_Date) }}</td>
+            <td class="px-2 py-1.5 border text-center"><span class="px-1.5 py-0.5 rounded text-[11px] font-medium" [ngClass]="statusClass(r.Shower_Status)">{{ r.Shower_Status }}</span></td>
+            <td class="px-2 py-1.5 border whitespace-nowrap">{{ fmtDate(r.StaticAudit_Date) }}</td>
+            <td class="px-2 py-1.5 border text-center"><span class="px-1.5 py-0.5 rounded text-[11px] font-medium" [ngClass]="statusClass(r.StaticAudit_Status)">{{ r.StaticAudit_Status }}</span></td>
+            <td class="px-2 py-1.5 border whitespace-nowrap">{{ fmtDate(r.Vms_Date) }}</td>
+            <td class="px-2 py-1.5 border text-center"><span class="px-1.5 py-0.5 rounded text-[11px] font-medium" [ngClass]="statusClass(r.Vms_Status)">{{ r.Vms_Status }}</span></td>
+            <td class="px-2 py-1.5 border whitespace-nowrap">{{ fmtDate(r.Paint_Date) }}</td>
+            <td class="px-2 py-1.5 border text-center"><span class="px-1.5 py-0.5 rounded text-[11px] font-medium" [ngClass]="statusClass(r.Paint_Status)">{{ r.Paint_Status }}</span></td>
+            <td class="px-2 py-1.5 border text-center"><span class="px-1.5 py-0.5 rounded text-[11px] font-medium" [ngClass]="statusClass(r.Recheck_Status)">{{ r.Recheck_Status }}</span></td>
+            <td class="px-2 py-1.5 border text-center"><span class="px-1.5 py-0.5 rounded text-[11px] font-medium" [ngClass]="statusClass(r.Rework_Status)">{{ r.Rework_Status }}</span></td>
+            <td class="px-2 py-1.5 border whitespace-nowrap">{{ fmtDate(r.Rfd_Date) }}</td>
+            <td class="px-2 py-1.5 border text-center"><span class="px-1.5 py-0.5 rounded text-[11px] font-medium" [ngClass]="statusClass(r.Rfd_Status)">{{ r.Rfd_Status }}</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

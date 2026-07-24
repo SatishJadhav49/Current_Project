@@ -1,0 +1,11 @@
+export const ROAD_TEST = 1;
+export const UNDERBODY = 2;
+export const DTC = 3;
+export const SHOWER_TEST = 4;
+export const ECOS = 5;
+export const LSP_AUDIT = 6;
+export const VMS = 7;
+export const RECHECK = 8;
+export const REWORK = 9;
+export const PHYSICAL_RFD = 11;
+export const PAINT_VERIFICATION = 12;

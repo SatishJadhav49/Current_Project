@@ -1,0 +1,399 @@
+<div class="bg-white rounded-lg shadow-md p-6 mb-4">
+  <!-- Stage header -->
+  <div class="flex items-center justify-between mb-4 pb-3 border-b">
+    <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+      <span class="inline-flex items-center justify-center w-8 h-8 rounded-full border-2 border-blue-600 text-base font-bold leading-none">
+        🚚
+      </span>
+      Physical RFD
+    </h3>
+    <div class="flex items-center gap-3">
+      <button
+        type="button"
+        (click)="refreshReadiness()"
+        [disabled]="loading"
+        class="text-xs text-blue-600 hover:underline disabled:text-gray-400"
+        title="Re-check readiness"
+      >
+        {{ loading ? 'Checking…' : '↻ Refresh' }}
+      </button>
+      <span class="text-xs text-gray-500">
+        Vehicle: <span class="font-semibold text-gray-700">{{ vehicle?.VIN_No }}</span>
+        <span *ngIf="logDate" class="ml-3 pl-3 border-l border-gray-300">
+          Saved: <span class="font-semibold text-gray-700">{{ logDate | date:'medium' }}</span>
+        </span>
+      </span>
+    </div>
+  </div>
+
+  <!-- Operator + Status banner -->
+  <div class="flex flex-col md:flex-row md:items-end gap-4 mb-6">
+    <div class="w-full md:w-96">
+      <label class="block text-sm font-medium text-gray-700 mb-1">
+        RFD Operator <span class="text-red-500">*</span>
+      </label>
+      <select
+        name="operator"
+        [(ngModel)]="selectedAuditorId"
+        (ngModelChange)="onOperatorChange()"
+        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        <option [ngValue]="0">-- Select Operator --</option>
+        <option *ngFor="let a of auditors" [ngValue]="a.Auditor_ID">
+          {{ a.Auditor_Name }}
+        </option>
+      </select>
+    </div>
+
+    <div class="md:ml-auto flex flex-col items-end gap-2">
+      <!-- Pre-dispatch: status badge. Post-dispatch: replace badge with the
+           actual Physical RFD timestamp so the operator sees WHEN it was done. -->
+      <ng-container *ngIf="!alreadyDispatched; else dispatchedStamp">
+        <span
+          class="px-4 py-2 rounded-md font-bold text-sm border-2"
+          [ngClass]="readiness.Ready
+            ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+            : 'bg-amber-50 text-amber-800 border-amber-300'"
+        >
+          {{ readiness.Ready ? 'READY FOR DISPATCH' : 'NOT READY' }}
+        </span>
+      </ng-container>
+      <ng-template #dispatchedStamp>
+        <div class="px-4 py-2 rounded-md border-2 bg-emerald-50 border-emerald-300 text-right">
+          <div class="text-xs text-emerald-700 font-semibold uppercase tracking-wide">
+            Physical RFD Done
+          </div>
+          <div class="text-sm font-bold text-emerald-900">
+            {{ logDate ? (logDate | date:'medium') : '—' }}
+          </div>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+
+  <!-- Readiness checklist -->
+  <div class="border-t pt-4 mb-6">
+    <h4 class="text-base font-semibold text-gray-800 mb-3 border-l-4 border-blue-500 pl-2">
+      Readiness Check
+    </h4>
+
+    <div class="bg-gray-50 border border-gray-200 rounded-md overflow-hidden">
+      <table class="min-w-full text-sm">
+        <tbody class="divide-y divide-gray-100">
+          <!-- Road Test -->
+          <tr class="hover:bg-white">
+            <td class="px-4 py-2 w-10 text-center align-middle">
+              <span *ngIf="readiness.RoadTest.Completed" class="text-emerald-600 text-lg font-bold">✓</span>
+              <span *ngIf="!readiness.RoadTest.Completed" class="text-red-600 text-lg font-bold">✗</span>
+            </td>
+            <td class="px-3 py-2 font-medium text-gray-800">Road Test</td>
+            <td class="px-3 py-2 text-gray-700">
+              <span *ngIf="readiness.RoadTest.Completed; else rtMissing">
+                {{ readiness.RoadTest.AuditorName || '—' }}
+                <span *ngIf="readiness.RoadTest.LogDate" class="text-xs text-gray-500">
+                  · {{ readiness.RoadTest.LogDate | date:'dd-MMM-yyyy HH:mm' }}
+                </span>
+              </span>
+              <ng-template #rtMissing>
+                <span class="text-red-700 italic">not saved</span>
+              </ng-template>
+            </td>
+          </tr>
+
+          <!-- Underbody -->
+          <tr class="hover:bg-white">
+            <td class="px-4 py-2 text-center align-middle">
+              <span *ngIf="readiness.Underbody.Completed" class="text-emerald-600 text-lg font-bold">✓</span>
+              <span *ngIf="!readiness.Underbody.Completed" class="text-red-600 text-lg font-bold">✗</span>
+            </td>
+            <td class="px-3 py-2 font-medium text-gray-800">Underbody</td>
+            <td class="px-3 py-2 text-gray-700">
+              <span *ngIf="readiness.Underbody.Completed; else ubMissing">
+                {{ readiness.Underbody.AuditorName || '—' }}
+                <span *ngIf="readiness.Underbody.LogDate" class="text-xs text-gray-500">
+                  · {{ readiness.Underbody.LogDate | date:'dd-MMM-yyyy HH:mm' }}
+                </span>
+              </span>
+              <ng-template #ubMissing>
+                <span class="text-red-700 italic">not saved</span>
+              </ng-template>
+            </td>
+          </tr>
+
+          <!-- Static Audit (backend key stays LspAudit) -->
+          <tr class="hover:bg-white">
+            <td class="px-4 py-2 text-center align-middle">
+              <span *ngIf="readiness.LspAudit.Completed" class="text-emerald-600 text-lg font-bold">✓</span>
+              <span *ngIf="!readiness.LspAudit.Completed" class="text-red-600 text-lg font-bold">✗</span>
+            </td>
+            <td class="px-3 py-2 font-medium text-gray-800">Static Audit</td>
+            <td class="px-3 py-2 text-gray-700">
+              <span *ngIf="readiness.LspAudit.Completed; else lspMissing">
+                {{ readiness.LspAudit.AuditorName || '—' }}
+                <span *ngIf="readiness.LspAudit.LogDate" class="text-xs text-gray-500">
+                  · {{ readiness.LspAudit.LogDate | date:'dd-MMM-yyyy HH:mm' }}
+                </span>
+              </span>
+              <ng-template #lspMissing>
+                <span class="text-red-700 italic">not saved</span>
+              </ng-template>
+            </td>
+          </tr>
+
+          <!-- DTC -->
+          <tr class="hover:bg-white">
+            <td class="px-4 py-2 text-center align-middle">
+              <span *ngIf="dtcOk() || reworkedDone(readiness.Dtc)" class="text-emerald-600 text-lg font-bold">✓</span>
+              <span *ngIf="!dtcOk() && !reworkedDone(readiness.Dtc)" class="text-red-600 text-lg font-bold">✗</span>
+            </td>
+            <td class="px-3 py-2 font-medium text-gray-800">DTC = OK</td>
+            <td class="px-3 py-2 text-gray-700">
+              <span *ngIf="readiness.Dtc.Completed; else dtcMissing">
+                <span [ngClass]="dtcOk() ? 'text-emerald-700' : 'text-red-700'" class="font-semibold">
+                  {{ dtcLabel() }}
+                </span>
+                · {{ readiness.Dtc.AuditorName || '—' }}
+                <span *ngIf="readiness.Dtc.LogDate" class="text-xs text-gray-500">
+                  · {{ readiness.Dtc.LogDate | date:'dd-MMM-yyyy HH:mm' }}
+                </span>
+                <span *ngIf="reworkedDone(readiness.Dtc)"
+                  class="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-xs font-semibold"
+                  [title]="readiness.Dtc.StageReworkRemark || ''"
+                >
+                  ✓ Reworked · {{ readiness.Dtc.StageReworkBy || '—' }}
+                </span>
+              </span>
+              <ng-template #dtcMissing>
+                <span class="text-red-700 italic">not saved</span>
+              </ng-template>
+            </td>
+          </tr>
+
+          <!-- ECOS (informational — does NOT gate dispatch) -->
+          <tr class="hover:bg-white">
+            <td class="px-4 py-2 text-center align-middle">
+              <span *ngIf="readiness.Ecos.IsOk === true || reworkedDone(readiness.Ecos)" class="text-emerald-600 text-lg font-bold">✓</span>
+              <span *ngIf="readiness.Ecos.IsOk === false && !reworkedDone(readiness.Ecos)" class="text-amber-600 text-lg font-bold">!</span>
+              <span *ngIf="readiness.Ecos.IsOk === null" class="text-gray-400 text-lg font-bold">·</span>
+            </td>
+            <td class="px-3 py-2 font-medium text-gray-800">
+              ECOS
+              <span class="text-xs text-gray-500 font-normal">(info only)</span>
+            </td>
+            <td class="px-3 py-2 text-gray-700">
+              <span *ngIf="readiness.Ecos.Completed; else ecosMissing">
+                <span [ngClass]="readiness.Ecos.IsOk ? 'text-emerald-700' : 'text-amber-700'" class="font-semibold">
+                  {{ statusLabel(readiness.Ecos) }}
+                </span>
+                · {{ readiness.Ecos.AuditorName || '—' }}
+                <span *ngIf="readiness.Ecos.LogDate" class="text-xs text-gray-500">
+                  · {{ readiness.Ecos.LogDate | date:'dd-MMM-yyyy HH:mm' }}
+                </span>
+                <span *ngIf="reworkedDone(readiness.Ecos)"
+                  class="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-xs font-semibold"
+                  [title]="readiness.Ecos.StageReworkRemark || ''"
+                >
+                  ✓ Reworked · {{ readiness.Ecos.StageReworkBy || '—' }}
+                </span>
+              </span>
+              <ng-template #ecosMissing>
+                <span class="text-gray-500 italic">not saved</span>
+              </ng-template>
+            </td>
+          </tr>
+
+          <!-- VMS (required — must be OK to dispatch) -->
+          <tr class="hover:bg-white">
+            <td class="px-4 py-2 text-center align-middle">
+              <span *ngIf="readiness.Vms.IsOk === true || reworkedDone(readiness.Vms)" class="text-emerald-600 text-lg font-bold">✓</span>
+              <span *ngIf="readiness.Vms.IsOk !== true && !reworkedDone(readiness.Vms)" class="text-red-600 text-lg font-bold">✗</span>
+            </td>
+            <td class="px-3 py-2 font-medium text-gray-800">VMS = OK</td>
+            <td class="px-3 py-2 text-gray-700">
+              <span *ngIf="readiness.Vms.Completed; else vmsMissing">
+                <span [ngClass]="readiness.Vms.IsOk ? 'text-emerald-700' : 'text-red-700'" class="font-semibold">
+                  {{ statusLabel(readiness.Vms) }}
+                </span>
+                · {{ readiness.Vms.AuditorName || '—' }}
+                <span *ngIf="readiness.Vms.LogDate" class="text-xs text-gray-500">
+                  · {{ readiness.Vms.LogDate | date:'dd-MMM-yyyy HH:mm' }}
+                </span>
+                <span *ngIf="reworkedDone(readiness.Vms)"
+                  class="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-xs font-semibold"
+                  [title]="readiness.Vms.StageReworkRemark || ''"
+                >
+                  ✓ Reworked · {{ readiness.Vms.StageReworkBy || '—' }}
+                </span>
+              </span>
+              <ng-template #vmsMissing>
+                <span class="text-red-700 italic">not saved</span>
+              </ng-template>
+            </td>
+          </tr>
+
+          <!-- Paint Verification (defect-entry stage — completing it is the
+               gate; its concerns roll into the rework check below) -->
+          <tr class="hover:bg-white">
+            <td class="px-4 py-2 text-center align-middle">
+              <span *ngIf="readiness.Paint.Completed" class="text-emerald-600 text-lg font-bold">✓</span>
+              <span *ngIf="!readiness.Paint.Completed" class="text-red-600 text-lg font-bold">✗</span>
+            </td>
+            <td class="px-3 py-2 font-medium text-gray-800">Paint Verification</td>
+            <td class="px-3 py-2 text-gray-700">
+              <span *ngIf="readiness.Paint.Completed; else paintMissing">
+                {{ readiness.Paint.AuditorName || '—' }}
+                <span *ngIf="readiness.Paint.LogDate" class="text-xs text-gray-500">
+                  · {{ readiness.Paint.LogDate | date:'dd-MMM-yyyy HH:mm' }}
+                </span>
+              </span>
+              <ng-template #paintMissing>
+                <span class="text-red-700 italic">not saved</span>
+              </ng-template>
+            </td>
+          </tr>
+
+          <!-- Rework -->
+          <tr class="hover:bg-white">
+            <td class="px-4 py-2 text-center align-middle">
+              <span *ngIf="readiness.Rework.PendingCount === 0" class="text-emerald-600 text-lg font-bold">✓</span>
+              <span *ngIf="readiness.Rework.PendingCount > 0" class="text-red-600 text-lg font-bold">✗</span>
+            </td>
+            <td class="px-3 py-2 font-medium text-gray-800">All concerns reworked</td>
+            <td class="px-3 py-2 text-gray-700">
+              <ng-container *ngIf="readiness.Rework.TotalConcerns === 0">
+                <span class="text-emerald-700">no concerns</span>
+              </ng-container>
+              <ng-container *ngIf="readiness.Rework.TotalConcerns > 0">
+                <span [ngClass]="readiness.Rework.PendingCount === 0 ? 'text-emerald-700 font-semibold' : 'text-red-700 font-semibold'">
+                  {{ readiness.Rework.DoneCount }} / {{ readiness.Rework.TotalConcerns }}
+                </span>
+                <span *ngIf="readiness.Rework.PendingCount > 0" class="text-xs text-gray-600">
+                  · {{ readiness.Rework.PendingCount }} pending
+                </span>
+              </ng-container>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Reworked concerns (informational — shown below the readiness check). -->
+  <div *ngIf="readiness.ReworkedConcerns.length" class="border-t pt-4 mb-6">
+    <h4 class="text-base font-semibold text-gray-800 mb-3 border-l-4 border-emerald-500 pl-2">
+      Concerns reworked ({{ readiness.ReworkedConcerns.length }})
+    </h4>
+    <div class="overflow-x-auto bg-white border border-gray-200 rounded-md">
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-50 text-gray-700">
+          <tr>
+            <th class="px-3 py-2 text-left font-semibold w-10">#</th>
+            <th class="px-3 py-2 text-left font-semibold">Stage</th>
+            <th class="px-3 py-2 text-left font-semibold">Area</th>
+            <th class="px-3 py-2 text-left font-semibold">Part</th>
+            <th class="px-3 py-2 text-left font-semibold">Defect</th>
+            <th class="px-3 py-2 text-left font-semibold">Location</th>
+            <th class="px-3 py-2 text-left font-semibold">Severity</th>
+            <th class="px-3 py-2 text-left font-semibold">Attribution</th>
+            <th class="px-3 py-2 text-left font-semibold">Defect Type</th>
+            <th class="px-3 py-2 text-left font-semibold">Remark</th>
+            <th class="px-3 py-2 text-left font-semibold">Reworked By</th>
+            <th class="px-3 py-2 text-left font-semibold">Reworked On</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          <tr *ngFor="let c of readiness.ReworkedConcerns; let i = index" class="hover:bg-emerald-50">
+            <td class="px-3 py-2 text-gray-500 font-medium">{{ i + 1 }}</td>
+            <td class="px-3 py-2 text-gray-700 font-medium">{{ c.Audit_Area_Name }}</td>
+            <td class="px-3 py-2 text-gray-700">{{ c.Vehicle_Area_Name || '—' }}</td>
+            <td class="px-3 py-2 text-gray-800 font-medium">{{ c.Part_Name }}</td>
+            <td class="px-3 py-2 text-gray-700">{{ c.Defect_Name }}</td>
+            <td class="px-3 py-2 text-gray-700">{{ c.Location_Name }}</td>
+            <td class="px-3 py-2">
+              <span class="font-mono font-semibold text-gray-700">{{ c.Severity_Code || '—' }}</span>
+            </td>
+            <td class="px-3 py-2 text-gray-700">{{ c.Attribution_Name || '—' }}</td>
+            <td class="px-3 py-2 text-gray-700">{{ c.Defect_Type_Name || '—' }}</td>
+            <td class="px-3 py-2 text-gray-600 italic max-w-xs truncate" [title]="c.Remark || ''">
+              {{ c.Remark || '—' }}
+            </td>
+            <td class="px-3 py-2 text-emerald-800 font-semibold">{{ c.Rework_By || '—' }}</td>
+            <td class="px-3 py-2 text-xs text-gray-600">
+              {{ c.Rework_Date ? (c.Rework_Date | date:'dd-MMM-yyyy HH:mm') : '—' }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Pending concerns table (only shown when rework is incomplete) -->
+  <div *ngIf="readiness.PendingConcerns.length" class="border-t pt-4 mb-6">
+    <h4 class="text-base font-semibold text-gray-800 mb-3 border-l-4 border-orange-500 pl-2">
+      Concerns blocking dispatch ({{ readiness.PendingConcerns.length }})
+    </h4>
+    <div class="overflow-x-auto bg-white border border-gray-200 rounded-md">
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-50 text-gray-700">
+          <tr>
+            <th class="px-3 py-2 text-left font-semibold w-10">#</th>
+            <th class="px-3 py-2 text-left font-semibold">Stage</th>
+            <th class="px-3 py-2 text-left font-semibold">Area</th>
+            <th class="px-3 py-2 text-left font-semibold">Part</th>
+            <th class="px-3 py-2 text-left font-semibold">Defect</th>
+            <th class="px-3 py-2 text-left font-semibold">Location</th>
+            <th class="px-3 py-2 text-left font-semibold">Severity</th>
+            <th class="px-3 py-2 text-left font-semibold">Attribution</th>
+            <th class="px-3 py-2 text-left font-semibold">Defect Type</th>
+            <th class="px-3 py-2 text-left font-semibold">Remark</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          <tr *ngFor="let c of readiness.PendingConcerns; let i = index" class="hover:bg-gray-50">
+            <td class="px-3 py-2 text-gray-500 font-medium">{{ i + 1 }}</td>
+            <td class="px-3 py-2 text-gray-700 font-medium">{{ c.Audit_Area_Name }}</td>
+            <td class="px-3 py-2 text-gray-700">{{ c.Vehicle_Area_Name || '—' }}</td>
+            <td class="px-3 py-2 text-gray-800 font-medium">{{ c.Part_Name }}</td>
+            <td class="px-3 py-2 text-gray-700">{{ c.Defect_Name }}</td>
+            <td class="px-3 py-2 text-gray-700">{{ c.Location_Name }}</td>
+            <td class="px-3 py-2">
+              <span class="font-mono font-semibold text-gray-700">{{ c.Severity_Code }}</span>
+            </td>
+            <td class="px-3 py-2 text-gray-700">{{ c.Attribution_Name }}</td>
+            <td class="px-3 py-2 text-gray-700">{{ c.Defect_Type_Name }}</td>
+            <td class="px-3 py-2 text-gray-600 italic max-w-xs truncate" [title]="c.Remark">
+              {{ c.Remark || '—' }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Final RFD button (or completed banner if already issued) -->
+  <ng-container *ngIf="locked; else dispatchButton">
+    <div class="flex items-center justify-center gap-2 pt-4 border-t text-emerald-700">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M5 13l4 4L19 7" />
+      </svg>
+      <span class="font-semibold">Physical RFD already marked done for this vehicle.</span>
+    </div>
+  </ng-container>
+  <ng-template #dispatchButton>
+    <div class="flex justify-end pt-4 border-t">
+      <button
+        type="button"
+        (click)="dispatch()"
+        [disabled]="!canDispatch()"
+        class="px-6 py-3 rounded-md font-bold text-white transition-colors"
+        [ngClass]="canDispatch()
+          ? 'bg-green-600 hover:bg-green-700'
+          : 'bg-gray-300 cursor-not-allowed'"
+        [title]="!readiness.Ready ? 'Resolve all checks first' : (!selectedAuditorId ? 'Select an operator first' : 'Mark Physical RFD as done')"
+      >
+        {{ saving ? 'Saving…' : '✓ Physical RFD Done' }}
+      </button>
+    </div>
+  </ng-template>
+</div>

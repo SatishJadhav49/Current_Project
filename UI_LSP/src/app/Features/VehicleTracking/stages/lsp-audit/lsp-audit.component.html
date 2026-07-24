@@ -1,0 +1,65 @@
+<div class="bg-white rounded-lg shadow-md p-6 mb-4">
+  <!-- Stage header -->
+  <div class="flex items-center justify-between mb-4 pb-3 border-b">
+    <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+      <span class="inline-flex items-center justify-center w-8 h-8 rounded-full border-2 border-blue-600 text-base font-bold leading-none">
+        📋
+      </span>
+      Static Audit
+    </h3>
+    <span class="text-xs text-gray-500">
+      Vehicle: <span class="font-semibold text-gray-700">{{ vehicle?.VIN_No }}</span>
+      <span *ngIf="logDate" class="ml-3 pl-3 border-l border-gray-300">
+        Saved: <span class="font-semibold text-gray-700">{{ logDate | date:'medium' }}</span>
+      </span>
+    </span>
+  </div>
+
+  <!-- Top action row: Auditor selector + No Defect (hidden once concerns exist) -->
+  <fieldset [disabled]="locked" class="flex flex-col md:flex-row md:items-end gap-3 mb-6 disabled:opacity-60">
+    <div class="w-full md:w-96">
+      <label class="block text-sm font-medium text-gray-700 mb-1">
+        Auditor <span class="text-red-500">*</span>
+      </label>
+      <select
+        name="auditor"
+        [(ngModel)]="selectedAuditorId"
+        (ngModelChange)="onAuditorChange()"
+        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        <option [ngValue]="0">-- Select Auditor --</option>
+        <option *ngFor="let a of auditors" [ngValue]="a.Auditor_ID">
+          {{ a.Auditor_Name }}
+        </option>
+      </select>
+    </div>
+
+    <div *ngIf="!concerns.length" class="md:ml-auto">
+      <button
+        type="button"
+        (click)="onNoDefect()"
+        [disabled]="!selectedAuditorId || savingNoDefect || saving"
+        class="w-full md:w-auto px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-md font-semibold whitespace-nowrap"
+        title="Mark this stage as completed with no defects"
+      >
+        {{ savingNoDefect ? 'Saving…' : '✓ No Defect' }}
+      </button>
+    </div>
+  </fieldset>
+
+  <!-- Defect entry form: emits addRequest / updateRequest / removeRequest events to parent -->
+  <div class="border-t pt-4">
+    <h4 class="text-base font-semibold text-gray-800 mb-3 border-l-4 border-orange-500 pl-2">
+      Concerns
+    </h4>
+
+    <app-defect-entry-form
+      [concerns]="concerns"
+      [saving]="saving"
+      [locked]="locked"
+      (addRequest)="onAddRequest($event)"
+      (updateRequest)="onUpdateRequest($event)"
+      (removeRequest)="onRemoveRequest($event)"
+    ></app-defect-entry-form>
+  </div>
+</div>

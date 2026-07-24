@@ -1,0 +1,33 @@
+{
+  "Files": [
+    {
+      "Id": "C:\\Satish\\Current_Project\\API_LSP\\wwwroot\\MasterTemplates\\Parts\\f979c4a2-def6-4968-9bf0-a3967832f6ec_Part-template.xlsx",
+      "PackagePath": "staticwebassets\\MasterTemplates\\Parts\\f979c4a2-def6-4968-9bf0-a3967832f6ec_Part-template.xlsx"
+    },
+    {
+      "Id": "C:\\Satish\\Current_Project\\API_LSP\\wwwroot\\uploads\\AreaImages\\b971f831-aa12-4bec-8ea3-22fc3b078251_thaar_rh.png",
+      "PackagePath": "staticwebassets\\uploads\\AreaImages\\b971f831-aa12-4bec-8ea3-22fc3b078251_thaar_rh.png"
+    },
+    {
+      "Id": "C:\\Satish\\Current_Project\\API_LSP\\wwwroot\\uploads\\AreaImages\\c6eaf044-3b14-47b2-b9f0-5fa3ef5e45a0_audit-map.png",
+      "PackagePath": "staticwebassets\\uploads\\AreaImages\\c6eaf044-3b14-47b2-b9f0-5fa3ef5e45a0_audit-map.png"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.API_LSP.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.build.API_LSP.props",
+      "PackagePath": "build\\API_LSP.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.buildMultiTargeting.API_LSP.props",
+      "PackagePath": "buildMultiTargeting\\API_LSP.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.buildTransitive.API_LSP.props",
+      "PackagePath": "buildTransitive\\API_LSP.props"
+    }
+  ],
+  "ElementsToRemove": []
+}
