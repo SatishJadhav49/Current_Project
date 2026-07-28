@@ -58,6 +58,11 @@
           >
             Model Name
           </th>
+          <th
+            class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-72"
+          >
+            Current Build Phase
+          </th>
           <!-- <th
             class="px-6 py-3 text-center text-xs font-bold text-gray-600 uppercase tracking-wider"
           >
@@ -79,6 +84,21 @@
               class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
             >
               {{ row.Model_Name }}
+            </td>
+
+            <!-- Current Build Phase — per-row auto-save. This phase is
+                 auto-selected on Identify Vehicle for vehicles of this model. -->
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              <select
+                [(ngModel)]="row.Current_Build_Phase_ID"
+                (ngModelChange)="onBuildPhaseChange(row)"
+                class="w-full max-w-[16rem] px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              >
+                <option [ngValue]="null">-- Not set --</option>
+                <option *ngFor="let p of buildPhases" [ngValue]="p.Build_Phase_ID">
+                  {{ p.Build_Phase_Name }}
+                </option>
+              </select>
             </td>
             <!-- <td
               class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900"

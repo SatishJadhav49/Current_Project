@@ -29,10 +29,39 @@ export class VehicletrackingreportComponent implements OnInit {
   startDate = '';
   endDate = '';
 
+  /** Stage + status client-side filters (applied to already-fetched rows). */
+  readonly stageOptions: { key: string; label: string }[] = [
+    { key: 'RoadTest', label: 'Road Test' },
+    { key: 'UnderBody', label: 'Under Body' },
+    { key: 'Dtc', label: 'DTC' },
+    { key: 'Shower', label: 'Shower' },
+    { key: 'StaticAudit', label: 'Static Audit' },
+    { key: 'Vms', label: 'VMS' },
+    { key: 'Paint', label: 'Paint' },
+    { key: 'Recheck', label: 'Recheck' },
+    { key: 'Rework', label: 'Rework' },
+    { key: 'Rfd', label: 'Physical RFD' },
+  ];
+  selectedStage = '';       // '' = All Stages
+  selectedStatus = 'All';   // All | Pending | Done
+
   // ─── Results ──────────────────────────────────────────────────────────
   rows: VehicleTrackingReportRow[] = [];
   loading = false;
   searched = false;
+
+  /**
+   * Rows after the on-screen Stage + Status filter. Filtering only kicks in
+   * when a specific stage is chosen AND a specific status (Pending/Done) is
+   * selected; otherwise every fetched row shows.
+   */
+  get displayedRows(): VehicleTrackingReportRow[] {
+    if (!this.selectedStage || this.selectedStatus === 'All') return this.rows;
+    const prop = `${this.selectedStage}_Status`;
+    return this.rows.filter(
+      (r) => (r as unknown as Record<string, string>)[prop] === this.selectedStatus,
+    );
+  }
 
   ngOnInit(): void {
     // Default the range to the current month for convenience.
@@ -95,6 +124,8 @@ export class VehicletrackingreportComponent implements OnInit {
     this.selectedModelId = 0;
     this.rows = [];
     this.searched = false;
+    this.selectedStage = '';
+    this.selectedStatus = 'All';
   }
 
   private static readonly MONTHS = [
@@ -127,29 +158,47 @@ export class VehicletrackingreportComponent implements OnInit {
     return `${day}-${mon}-${d.getFullYear()} ${hh}:${mm} ${ampm}`;
   }
 
-  /** Tailwind classes for a status chip. */
+  /**
+   * TAT (turnaround) = Physical RFD date/time − Road Test date/time, shown as
+   * a compact duration ("2d 5h", "6h 40m", "45m"). Blank ("–") when either
+   * date is missing (not yet reached RFD or Road Test).
+   */
+  fmtTat(row: VehicleTrackingReportRow): string {
+    if (!row.RoadTest_Date || !row.Rfd_Date) return '–';
+    const start = new Date(row.RoadTest_Date).getTime();
+    const end = new Date(row.Rfd_Date).getTime();
+    if (isNaN(start) || isNaN(end) || end < start) return '–';
+
+    let mins = Math.round((end - start) / 60000);
+    const days = Math.floor(mins / 1440);
+    mins -= days * 1440;
+    const hours = Math.floor(mins / 60);
+    mins -= hours * 60;
+
+    if (days > 0) return `${days}d ${hours}h`;
+    if (hours > 0) return `${hours}h ${mins}m`;
+    return `${mins}m`;
+  }
+
+  /** Tailwind classes for a status chip — only Done / Pending. */
   statusClass(status: string): string {
-    switch (status) {
-      case 'OK':
-        return 'bg-emerald-100 text-emerald-700';
-      case 'NOK':
-        return 'bg-red-100 text-red-700';
-      default:
-        return 'bg-gray-100 text-gray-500';
-    }
+    return status === 'Done'
+      ? 'bg-emerald-100 text-emerald-700'
+      : 'bg-gray-100 text-gray-500';
   }
 
   // ─── Excel export (matches LSP_Vehicle_Tracking.xlsx column order) ──────
   async downloadExcel(): Promise<void> {
-    if (this.rows.length === 0) return;
+    const exportRows = this.displayedRows;
+    if (exportRows.length === 0) return;
 
     const headers = [
-      'Sr.No', 'VIN No', 'Body Serial No', 'Model Name', 'Model Description',
+      'Sr.No', 'VIN No', 'Serial No', 'Model Name', 'Model Description',
       'Variant', 'Color', 'Engine No', 'Build Phase', 'Drive Type', 'Fuel Type',
-      'Country', 'Roll Down Date', 'CAI OK date', 'Road Test Date', 'Road Test Status',
+      'Country', 'Roll Down Date', 'CAI OK date', 'TAT (RT→RFD)', 'Road Test Date', 'Road Test Status',
       'Under Body Date', 'Under Body Status', 'DTC Date', 'DTC Status', 'Shower Test Date',
       'Shower Test Status', 'Static Audit Date', 'Static Audit Status', 'VMS Date',
-      'VMS status', 'Paint Verification Date', 'Paint Verification Status', 'Recheck',
+      'VMS status', 'Paint Verifi. Date', 'Paint Veri. Status', 'Recheck',
       'Rework', 'RFD Date', 'Physical RFD Status',
     ];
 
@@ -159,7 +208,7 @@ export class VehicletrackingreportComponent implements OnInit {
     const headerRow = sheet.addRow(headers);
     headerRow.eachCell((cell) => {
       cell.font = { name: 'Arial', bold: true, color: { argb: 'FFFFFFFF' } };
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1D4ED8' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '008b8b' } };
       cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
       cell.border = {
         top: { style: 'thin' }, left: { style: 'thin' },
@@ -167,7 +216,7 @@ export class VehicletrackingreportComponent implements OnInit {
       };
     });
 
-    this.rows.forEach((r, i) => {
+    exportRows.forEach((r, i) => {
       sheet.addRow([
         i + 1,
         r.VIN_No,
@@ -183,6 +232,7 @@ export class VehicletrackingreportComponent implements OnInit {
         r.Country_Name,
         this.fmtDateTime(r.Roll_Down_Date),
         this.fmtDateTime(r.CAI_OK_Date),
+        this.fmtTat(r),
         this.fmtDateTime(r.RoadTest_Date),
         r.RoadTest_Status,
         this.fmtDateTime(r.UnderBody_Date),
@@ -209,12 +259,18 @@ export class VehicletrackingreportComponent implements OnInit {
     });
     sheet.getColumn(1).width = 6;
     sheet.getColumn(2).width = 20; // VIN
+    sheet.getColumn(5).width = 30; // VIN
     sheet.getColumn(8).width = 20; // Engine No
+    sheet.getColumn(15).width = 13; // TAT
     // Date columns hold "dd-MMM-yyyy hh:mm a" — widen them to fit.
-    [13, 14, 15, 17, 19, 21, 23, 25, 27, 31].forEach((c) => {
+    [13, 14, 16, 18, 20, 22, 24, 26, 28, 32].forEach((c) => {
       sheet.getColumn(c).width = 21;
     });
     sheet.views = [{ state: 'frozen', ySplit: 1 }];
+
+    // [13, 14, 15, 17, 19, 21, 23, 25, 27, 31].forEach((c) => {
+    //    sheet.getColumn(1).alignment = { horizontal: 'center' };
+    // });
 
     const buffer = await workbook.xlsx.writeBuffer();
     const stamp = `${this.startDate}_to_${this.endDate}`;

@@ -190,6 +190,18 @@ export class MasterService {
     );
   }
 
+    /** Per-row auto-save of a model's current build phase. Invalidates the
+   *  models cache so Identify Vehicle picks up the new phase immediately. */
+  updateModelBuildPhase(modelId: number, buildPhaseId: number | null): Observable<any> {
+    sessionStorage.removeItem('models_cache_v2');
+    return this.apiRequest.post('MM_Model_Master/UpdateModelBuildPhase', {
+      Model_ID: modelId,
+      Current_Build_Phase_ID: buildPhaseId,
+      Updated_Host: localStorage.getItem('Hostname') ?? '',
+      Updated_User_ID: Number(localStorage.getItem('Employee_ID')) || undefined,
+    });
+  }
+
   //***************************** ModelMaster Services end ***********************************//
 
   //***************************** Area Image Master (Paint Verification) ******************//

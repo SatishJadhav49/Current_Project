@@ -4,7 +4,8 @@
     <h2 class="text-lg md:text-xl font-bold text-gray-800">Vehicle Tracking Report</h2>
     <div class="text-sm text-gray-500" *ngIf="searched && !loading">
       Vehicles:
-      <span class="font-semibold text-gray-700">{{ rows.length }}</span>
+      <span class="font-semibold text-gray-700">{{ displayedRows.length }}</span>
+      <span *ngIf="displayedRows.length !== rows.length" class="text-gray-400"> of {{ rows.length }}</span>
     </div>
   </div>
 
@@ -48,6 +49,34 @@
         />
       </div>
 
+      <!-- Stage filter (client-side, on fetched rows) -->
+      <div class="w-full md:w-44">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Stage</label>
+        <select
+          name="stage"
+          [(ngModel)]="selectedStage"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">All Stages</option>
+          <option *ngFor="let s of stageOptions" [value]="s.key">{{ s.label }}</option>
+        </select>
+      </div>
+
+      <!-- Status filter (applies to the selected stage) -->
+      <div class="w-full md:w-36">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+        <select
+          name="status"
+          [(ngModel)]="selectedStatus"
+          [disabled]="!selectedStage"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+        >
+          <option value="All">All</option>
+          <option value="Pending">Pending</option>
+          <option value="Done">Done</option>
+        </select>
+      </div>
+
       <!-- Actions -->
       <div class="flex gap-2">
         <button
@@ -68,7 +97,7 @@
         <button
           type="button"
           (click)="downloadExcel()"
-          [disabled]="rows.length === 0"
+          [disabled]="displayedRows.length === 0"
           class="px-4 py-2 text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300"
         >
           ⬇ Download Excel
@@ -89,21 +118,25 @@
       No vehicles found for the selected model and date range.
     </div>
 
+    <!-- No rows match the stage/status filter -->
+    <div *ngIf="!loading && rows.length > 0 && displayedRows.length === 0" class="py-12 text-center text-gray-500">
+      No vehicles match the selected stage &amp; status filter.
+    </div>
+
     <!-- Prompt state (before first search) -->
     <div *ngIf="!loading && !searched" class="py-12 text-center text-gray-400">
       Select a model and date range, then click <span class="font-medium">Search</span>.
     </div>
 
     <!-- Legend -->
-    <div *ngIf="!loading && rows.length > 0" class="flex flex-wrap items-center gap-3 mb-3 text-[11px] text-gray-500">
-      <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> OK / Done</span>
-      <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-red-500"></span> NOK</span>
+    <div *ngIf="!loading && displayedRows.length > 0" class="flex flex-wrap items-center gap-3 mb-3 text-[11px] text-gray-500">
+      <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Done</span>
       <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-gray-300"></span> Pending</span>
       <span class="ml-auto italic">Sr. &amp; VIN stay pinned · hover a stage for full date &amp; time</span>
     </div>
 
     <!-- Table: sticky header + frozen Sr./VIN columns, one cell per stage -->
-    <div *ngIf="!loading && rows.length > 0" class="report-scroll rounded-lg border border-gray-200">
+    <div *ngIf="!loading && displayedRows.length > 0" class="report-scroll rounded-lg border border-gray-200">
       <table class="rpt text-xs">
         <thead>
           <tr>
@@ -121,6 +154,7 @@
             <th>Country</th>
             <th>Roll Down</th>
             <th>CAI OK</th>
+            <th class="grp text-center">TAT<br /><span class="font-normal text-[10px] text-gray-500">RT→RFD</span></th>
             <th class="grp text-center">Road Test</th>
             <th class="text-center">Under Body</th>
             <th class="text-center">DTC</th>
@@ -134,21 +168,22 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let r of rows; let i = index">
+          <tr *ngFor="let r of displayedRows; let i = index">
             <td class="col-sr">{{ i + 1 }}</td>
             <td class="col-vin whitespace-nowrap">{{ r.VIN_No }}</td>
             <td class="whitespace-nowrap">{{ r.Body_Serial_No }}</td>
             <td class="whitespace-nowrap">{{ r.Model_Name }}</td>
             <td class="whitespace-nowrap">{{ r.Model_Desc }}</td>
-            <td>{{ r.Variant }}</td>
+            <td class="whitespace-nowrap" >{{ r.Variant }}</td>
             <td>{{ r.Colour_Desc }}</td>
             <td class="whitespace-nowrap">{{ r.Engine_No }}</td>
             <td class="whitespace-nowrap">{{ r.Build_Phase_Name }}</td>
-            <td>{{ r.Drive_Name }}</td>
+            <td class="whitespace-nowrap" >{{ r.Drive_Name }}</td>
             <td>{{ r.Fuel_Name }}</td>
             <td>{{ r.Country_Name }}</td>
             <td class="whitespace-nowrap" [title]="fmtDateTime(r.Roll_Down_Date)">{{ fmtDate(r.Roll_Down_Date) }}</td>
             <td class="whitespace-nowrap" [title]="fmtDateTime(r.CAI_OK_Date)">{{ fmtDate(r.CAI_OK_Date) }}</td>
+            <td class="grp text-center whitespace-nowrap font-medium text-gray-700">{{ fmtTat(r) }}</td>
 
             <td class="grp text-center" [title]="fmtDateTime(r.RoadTest_Date)">
               <span class="inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold" [ngClass]="statusClass(r.RoadTest_Status)">{{ r.RoadTest_Status }}</span>

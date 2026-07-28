@@ -41,13 +41,24 @@ namespace API_LSP.Models.DTOs
         public string? Email_Address { get; set; }
     }
 
-  
+
 
     public class MM_ModelListDto
     {
         public decimal Model_ID { get; set; }
         public string? Model_Name { get; set; }
         public bool? Is_LSP_Active { get; set; }
+        /// <summary>Model's current build phase — auto-selected on Identify Vehicle.</summary>
+        public decimal? Current_Build_Phase_ID { get; set; }
+        public string? Updated_Host { get; set; }
+        public decimal? Updated_User_ID { get; set; }
+    }
+
+    /// <summary>Per-row auto-save payload from the Model Master's build-phase dropdown.</summary>
+    public class ModelBuildPhaseUpdateDto
+    {
+        public decimal Model_ID { get; set; }
+        public decimal? Current_Build_Phase_ID { get; set; }
         public string? Updated_Host { get; set; }
         public decimal? Updated_User_ID { get; set; }
     }

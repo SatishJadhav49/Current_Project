@@ -16,6 +16,38 @@
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\MasterTemplates\Parts\f979c4a2-def6-4968-9bf0-a3967832f6ec_Part-template.xlsx))</OriginalItemSpec>
     </StaticWebAsset>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\uploads\AreaImages\6025c227-38d9-4be1-a5bc-a1ef49d1f353_image.png))">
+      <SourceType>Package</SourceType>
+      <SourceId>API_LSP</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/API_LSP</BasePath>
+      <RelativePath>uploads/AreaImages/6025c227-38d9-4be1-a5bc-a1ef49d1f353_image.png</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\uploads\AreaImages\6025c227-38d9-4be1-a5bc-a1ef49d1f353_image.png))</OriginalItemSpec>
+    </StaticWebAsset>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\uploads\AreaImages\86aaa52a-157a-4f75-bd49-41ef472b09f8_thaar_rh.png))">
+      <SourceType>Package</SourceType>
+      <SourceId>API_LSP</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/API_LSP</BasePath>
+      <RelativePath>uploads/AreaImages/86aaa52a-157a-4f75-bd49-41ef472b09f8_thaar_rh.png</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\uploads\AreaImages\86aaa52a-157a-4f75-bd49-41ef472b09f8_thaar_rh.png))</OriginalItemSpec>
+    </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\uploads\AreaImages\b971f831-aa12-4bec-8ea3-22fc3b078251_thaar_rh.png))">
       <SourceType>Package</SourceType>
       <SourceId>API_LSP</SourceId>

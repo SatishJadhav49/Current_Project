@@ -56,16 +56,6 @@ namespace API_LSP.Data
                         };
                     }
                 }
-                // vehicleDetails.Body_Serial_No = "12345678901";
-                // vehicleDetails.Engine_No = "Engine No 12345678901";
-                // vehicleDetails.Model_Code = "Model Code 12345678901";
-                // vehicleDetails.Model_Desc = "Model Desc 12345678901";
-                // vehicleDetails.Colour_Code = "BR -2";
-                // vehicleDetails.Colour_Desc = "black Red";
-                // vehicleDetails.VIN_No = Vin_No;
-                // vehicleDetails.Roll_Down_Date = DateTime.Now;
-                // vehicleDetails.CAI_OK_Date = DateTime.Now;
-                // vehicleDetails.Variant = "Variant 12345678901";
                 if (vehicleDetails != null)
                     return vehicleDetails;
 
@@ -98,13 +88,20 @@ namespace API_LSP.Data
                         if (reader["Model_Name"].ToString()?.Length > 0)
                         {
                             // Get model ID based on Model_Name
-                            using var modelCmd = new SqlCommand("SELECT Model_ID FROM MM_Model WHERE Model_Name = @Model_Name", connection);
+                            using var modelCmd = new SqlCommand(
+                             "SELECT Model_ID, Current_Build_Phase_ID FROM MM_Model WHERE Model_Name = @Model_Name",
+                             connection);
+
                             modelCmd.Parameters.AddWithValue("@Model_Name", reader["Model_Name"].ToString());
-                            var modelId = await modelCmd.ExecuteScalarAsync();
-                            if (modelId != null && modelId != DBNull.Value)
+
+                            using var modelReader = await modelCmd.ExecuteReaderAsync();
+
+                            if (await modelReader.ReadAsync())
                             {
-                                vehicleDetails.Model_ID = Convert.ToDecimal(modelId);
+                                vehicleDetails.Model_ID = Convert.ToDecimal(modelReader["Model_ID"]);
+                                vehicleDetails.Build_Phase_ID = modelReader["Current_Build_Phase_ID"] != DBNull.Value ? Convert.ToDecimal(modelReader["Current_Build_Phase_ID"]) : 0;
                             }
+
                         }
 
                         // Get fuel ID based on Fuel_Type
@@ -140,6 +137,8 @@ namespace API_LSP.Data
                                 vehicleDetails.Country_ID = Convert.ToDecimal(countryId);
                             }
                         }
+
+
                     }
                 }
 

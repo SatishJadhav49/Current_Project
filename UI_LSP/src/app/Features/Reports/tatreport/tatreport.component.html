@@ -1,0 +1,123 @@
+<div class="p-4 md:p-6 mx-auto">
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-lg md:text-xl font-bold text-gray-800">Stage TAT (Turnaround) Report</h2>
+    <div class="text-sm text-gray-500" *ngIf="report && !loading">
+      {{ report.Model_Name }} · {{ report.VehicleCount }} vehicles
+    </div>
+  </div>
+
+  <!-- Filter bar card -->
+  <div class="bg-white rounded-lg shadow-md p-4 mb-4">
+    <div class="flex flex-col md:flex-row gap-3 md:items-end">
+      <div class="w-full md:w-64">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Model <span class="text-red-500">*</span></label>
+        <select
+          name="model"
+          [(ngModel)]="selectedModelId"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option [ngValue]="0">Select model…</option>
+          <option *ngFor="let m of models" [ngValue]="m.Model_ID">{{ m.Model_Name }}</option>
+        </select>
+      </div>
+      <div class="w-full md:w-44">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Start Date <span class="text-red-500">*</span></label>
+        <input type="date" name="startDate" [(ngModel)]="startDate"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      </div>
+      <div class="w-full md:w-44">
+        <label class="block text-sm font-medium text-gray-700 mb-1">End Date <span class="text-red-500">*</span></label>
+        <input type="date" name="endDate" [(ngModel)]="endDate"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      </div>
+      <div class="flex gap-2">
+        <button type="button" (click)="search()" [disabled]="loading"
+          class="px-4 py-2 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300">
+          {{ loading ? 'Loading…' : 'Search' }}
+        </button>
+        <button type="button" (click)="clear()"
+          class="px-4 py-2 text-sm font-medium rounded-md text-gray-700 bg-gray-200 hover:bg-gray-300">
+          Clear
+        </button>
+        <button type="button" (click)="downloadExcel()" [disabled]="!report"
+          class="px-4 py-2 text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300">
+          ⬇ Download Excel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="bg-white rounded-lg shadow-md py-12 text-center text-gray-500">Loading report…</div>
+
+  <!-- Prompt -->
+  <div *ngIf="!loading && !searched" class="bg-white rounded-lg shadow-md py-12 text-center text-gray-400">
+    Select a model and date range, then click <span class="font-medium">Search</span>.
+  </div>
+
+  <ng-container *ngIf="!loading && report">
+    <!-- Overall cycle headline -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+      <div class="bg-white rounded-lg shadow-md p-4 border-l-4 border-indigo-500 sm:col-span-2">
+        <div class="text-xs uppercase tracking-wide text-gray-500">Overall Cycle · Roll Down → Physical RFD</div>
+        <div class="text-3xl font-bold text-indigo-600 mt-1">
+          {{ fmtDuration(report.OverallAvgHours ?? 0, report.OverallCount) }}
+        </div>
+        <div class="text-[11px] text-gray-400 mt-0.5" *ngIf="report.OverallCount > 0">
+          avg over {{ report.OverallCount }} dispatched · min {{ fmtDuration(report.OverallMinHours ?? 0, report.OverallCount) }} · max {{ fmtDuration(report.OverallMaxHours ?? 0, report.OverallCount) }}
+        </div>
+        <div class="text-[11px] text-gray-400 mt-0.5" *ngIf="report.OverallCount === 0">
+          no vehicles have both a Roll Down date and RFD in this range
+        </div>
+      </div>
+      <div class="bg-white rounded-lg shadow-md p-4 border-l-4 border-blue-500">
+        <div class="text-xs uppercase tracking-wide text-gray-500">Vehicles in Range</div>
+        <div class="text-3xl font-bold text-blue-600 mt-1">{{ report.VehicleCount }}</div>
+        <div class="text-[11px] text-gray-400 mt-0.5">by vehicle date</div>
+      </div>
+    </div>
+
+    <!-- Per-stage transitions -->
+    <div class="bg-white rounded-lg shadow-md p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-semibold text-gray-700">Stage-to-stage turnaround</h3>
+        <span class="text-[11px] text-gray-500 italic">🔴 = slowest step (bottleneck)</span>
+      </div>
+
+      <div *ngIf="!hasTransitions" class="py-10 text-center text-gray-400">No stage data for this range.</div>
+
+      <div *ngIf="hasTransitions" class="report-scroll rounded-lg border border-gray-200">
+        <table class="rpt text-xs">
+          <thead>
+            <tr>
+              <th>From Stage</th>
+              <th>To Stage</th>
+              <th class="text-center">Avg</th>
+              <th class="text-center">Min</th>
+              <th class="text-center">Max</th>
+              <th class="text-center">Vehicles</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let t of report.Transitions"
+              [ngClass]="{ 'bg-red-50': t.Vehicle_Count > 0 && t.Avg_Hours === bottleneckAvg && bottleneckAvg > 0 }">
+              <td class="whitespace-nowrap">{{ t.From_Stage }}</td>
+              <td class="whitespace-nowrap font-medium text-gray-800">{{ t.To_Stage }}</td>
+              <td class="text-center font-semibold"
+                [ngClass]="t.Vehicle_Count > 0 && t.Avg_Hours === bottleneckAvg && bottleneckAvg > 0 ? 'text-red-600' : 'text-gray-800'">
+                <span *ngIf="t.Vehicle_Count > 0 && t.Avg_Hours === bottleneckAvg && bottleneckAvg > 0">🔴 </span>{{ fmtDuration(t.Avg_Hours, t.Vehicle_Count) }}
+              </td>
+              <td class="text-center text-gray-600">{{ fmtDuration(t.Min_Hours, t.Vehicle_Count) }}</td>
+              <td class="text-center text-gray-600">{{ fmtDuration(t.Max_Hours, t.Vehicle_Count) }}</td>
+              <td class="text-center text-gray-600">{{ t.Vehicle_Count }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="text-[11px] text-gray-400 mt-2 italic">
+        Timings use stage save times (Track Logs). Stages are re-savable, so figures are indicative. Optional Shower Test is excluded.
+      </p>
+    </div>
+  </ng-container>
+</div>

@@ -8,6 +8,8 @@ export class Model {
   Shop_ID?: number;
   Model_Name: string = "";
   Is_LSP_Active:boolean = true;
+  /** Current build phase of the model — auto-selected on Identify Vehicle. */
+  Current_Build_Phase_ID?: number | null;
    Updated_Host?: string = localStorage.getItem('Hostname') ?? '';
   Updated_User_ID? = Number(localStorage.getItem('Employee_ID'));
 }

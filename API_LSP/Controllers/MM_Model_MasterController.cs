@@ -51,5 +51,29 @@ namespace API_LSP.Controllers
                 return await HandleExceptionAsync(ex, "UpdateModelStatus");
             }
         }
+
+        /// <summary>Per-row auto-save of a model's current build phase — the
+        /// phase is then auto-selected on the Identify Vehicle page.</summary>
+        [HttpPost("UpdateModelBuildPhase")]
+        public async Task<IActionResult> UpdateModelBuildPhase([FromBody] ModelBuildPhaseUpdateDto dto)
+        {
+            try
+            {
+                if (dto == null || dto.Model_ID <= 0)
+                {
+                    var bad = _responseHelper.CreateErrorResponse<bool>(
+                        "Validation Error", "Model_ID is required.");
+                    return BadRequest(bad);
+                }
+
+                var result = await _modelDataService.UpdateModelBuildPhase(dto);
+                var response = _responseHelper.CreateSuccessResponse(result, "Success", "Build phase updated.");
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return await HandleExceptionAsync(ex, "UpdateModelBuildPhase");
+            }
+        }
     }
 }

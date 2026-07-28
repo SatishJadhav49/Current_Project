@@ -7,6 +7,8 @@ import { MasterService } from '../master.service';
 import { MenuService } from '../../../auth';
 import { Router } from '@angular/router';
 import { Model } from '../../../Shared/models/common.model';
+import { VehicleTrackingService } from '../../VehicleTracking/vehicle-tracking.service';
+import { BuildPhase } from '../../VehicleTracking/vehicle-tracking.models';
 
 @Component({
   selector: 'app-model',
@@ -22,6 +24,9 @@ export class ModelComponent {
   // Raw Defect Type data fetched from backend
   ModelList: Model[] = [];
 
+  /** Build phase master — powers the per-row Current Build Phase dropdown. */
+  buildPhases: BuildPhase[] = [];
+
   // Rights
   isEdit: boolean = false;
   isDelete: boolean = false;
@@ -33,6 +38,7 @@ export class ModelComponent {
   readonly masterService = inject(MasterService);
   readonly menuService = inject(MenuService);
   readonly router = inject(Router);
+  readonly vehicleService = inject(VehicleTrackingService);
   //*************************************************** Dependency End ****************************************//
 
   ngOnInit() {
@@ -44,6 +50,9 @@ export class ModelComponent {
       this.isDelete = this.menuService.canDelete(Menu_ID);
       this.isCreate = this.menuService.canCreate(Menu_ID);
       this.getModelList();
+      this.vehicleService.getBuildPhases().subscribe({
+        next: (list) => (this.buildPhases = list ?? []),
+      });
     } else {
       this.toastService.showWarning(
         'You dont have access to this route',
@@ -95,4 +104,29 @@ export class ModelComponent {
     }
   }
   //*************************************************** Update Model Master end *************************************//
+
+  /** Per-row auto-save: the model's Current Build Phase changed. This phase
+   *  is auto-selected on Identify Vehicle for every vehicle of the model. */
+  onBuildPhaseChange(row: Model) {
+    this.masterService
+      .updateModelBuildPhase(row.Model_ID, row.Current_Build_Phase_ID ?? null)
+      .subscribe({
+        next: (res) => {
+          if (res?.isErrorMessage) {
+            this.toastService.showError(res.messageTitle, res.messageDetail);
+            return;
+          }
+          const phase = this.buildPhases.find(
+            (p) => p.Build_Phase_ID === row.Current_Build_Phase_ID,
+          );
+          this.toastService.showSuccess(
+            'Build phase updated',
+            `${row.Model_Name} → ${phase?.Build_Phase_Name ?? 'None'}`,
+          );
+        },
+        error: (err) => {
+          console.error('Error updating build phase:', err);
+        },
+      });
+  }
 }

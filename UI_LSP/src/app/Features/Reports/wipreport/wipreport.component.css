@@ -1,0 +1,79 @@
+/* Contained, scrollable defects grid with a styled thin scrollbar. */
+.report-scroll {
+  max-height: 60vh;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+.report-scroll::-webkit-scrollbar {
+  height: 10px;
+  width: 10px;
+}
+.report-scroll::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+.report-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+  border: 2px solid #f1f5f9;
+}
+.report-scroll::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Grid — border-separate keeps borders visible on sticky cells. */
+table.rpt {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+}
+.rpt th,
+.rpt td {
+  border-bottom: 1px solid #e5e7eb;
+  border-right: 1px solid #e5e7eb;
+  padding: 6px 8px;
+  vertical-align: middle;
+}
+.rpt thead th {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: #f3f4f6;
+  font-weight: 600;
+  color: #374151;
+  white-space: nowrap;
+  text-align: left;
+}
+.rpt tbody tr:hover td {
+  background: #f9fafb;
+}
+
+/* Frozen identity columns (Sr. + VIN) stay pinned on horizontal scroll. */
+.rpt .col-sr {
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  width: 48px;
+  min-width: 48px;
+  background: #ffffff;
+  color: #6b7280;
+}
+.rpt .col-vin {
+  position: sticky;
+  left: 48px;
+  z-index: 10;
+  min-width: 130px;
+  background: #ffffff;
+  font-weight: 600;
+  color: #1f2937;
+  border-right: 2px solid #d1d5db;
+}
+.rpt thead .col-sr,
+.rpt thead .col-vin {
+  z-index: 30;
+  background: #f3f4f6;
+}
+.rpt tbody tr:hover .col-sr,
+.rpt tbody tr:hover .col-vin {
+  background: #f9fafb;
+}

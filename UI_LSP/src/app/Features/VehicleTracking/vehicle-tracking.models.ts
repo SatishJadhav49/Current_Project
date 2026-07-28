@@ -62,9 +62,12 @@ export interface CountryItem {
   Country_Name: string;
 }
 
+
 export interface ModelItem {
   Model_ID: number;
   Model_Name: string;
+  /** Model's current build phase — auto-selected on Identify Vehicle. */
+  Current_Build_Phase_ID?: number | null;
 }
 
 export interface PlantItem {

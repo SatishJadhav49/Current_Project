@@ -1,0 +1,171 @@
+<div class="p-4 md:p-6 mx-auto">
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-lg md:text-xl font-bold text-gray-800">Daily Report</h2>
+    <div class="text-sm text-gray-500" *ngIf="report && !loading">
+      {{ report.Model_Name }} · {{ fmtDate(report.ReportDate) }}
+    </div>
+  </div>
+
+  <!-- Filter bar card -->
+  <div class="bg-white rounded-lg shadow-md p-4 mb-4">
+    <div class="flex flex-col md:flex-row gap-3 md:items-end">
+      <!-- Model dropdown -->
+      <div class="w-full md:w-64">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Model <span class="text-red-500">*</span></label>
+        <select
+          name="model"
+          [(ngModel)]="selectedModelId"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option [ngValue]="0">Select model…</option>
+          <option *ngFor="let m of models" [ngValue]="m.Model_ID">
+            {{ m.Model_Name }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Date -->
+      <div class="w-full md:w-44">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Date <span class="text-red-500">*</span></label>
+        <input
+          type="date"
+          name="reportDate"
+          [(ngModel)]="reportDate"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
+      <!-- Actions -->
+      <div class="flex gap-2">
+        <button
+          type="button"
+          (click)="search()"
+          [disabled]="loading"
+          class="px-4 py-2 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300"
+        >
+          {{ loading ? 'Loading…' : 'Search' }}
+        </button>
+        <button
+          type="button"
+          (click)="clear()"
+          class="px-4 py-2 text-sm font-medium rounded-md text-gray-700 bg-gray-200 hover:bg-gray-300"
+        >
+          Clear
+        </button>
+        <button
+          type="button"
+          (click)="downloadExcel()"
+          [disabled]="!report"
+          class="px-4 py-2 text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300"
+        >
+          ⬇ Download Excel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="bg-white rounded-lg shadow-md py-12 text-center text-gray-500">
+    Loading report…
+  </div>
+
+  <!-- Prompt state (before first search) -->
+  <div *ngIf="!loading && !searched" class="bg-white rounded-lg shadow-md py-12 text-center text-gray-400">
+    Select a model and date, then click <span class="font-medium">Search</span>.
+  </div>
+
+  <!-- Report body -->
+  <ng-container *ngIf="!loading && report">
+    <!-- Headline tiles -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+      <div class="bg-white rounded-lg shadow-md p-4 border-l-4 border-emerald-500">
+        <div class="text-xs uppercase tracking-wide text-gray-500">Physical RFD Done</div>
+        <div class="text-3xl font-bold text-emerald-600 mt-1">{{ report.RfdDoneCount }}</div>
+        <div class="text-[11px] text-gray-400 mt-0.5">of this date's vehicles</div>
+      </div>
+      <div class="bg-white rounded-lg shadow-md p-4 border-l-4 border-blue-500">
+        <div class="text-xs uppercase tracking-wide text-gray-500">Vehicles Audited</div>
+        <div class="text-3xl font-bold text-blue-600 mt-1">{{ report.VehiclesActiveCount }}</div>
+        <div class="text-[11px] text-gray-400 mt-0.5">vehicle date on this day</div>
+      </div>
+      <div class="bg-white rounded-lg shadow-md p-4 border-l-4 border-amber-500">
+        <div class="text-xs uppercase tracking-wide text-gray-500">Total Defects</div>
+        <div class="text-3xl font-bold text-amber-600 mt-1">{{ report.TotalDefectsCount }}</div>
+        <div class="text-[11px] text-gray-400 mt-0.5">across these vehicles</div>
+      </div>
+    </div>
+
+    <!-- Stage-wise completed today -->
+    <div class="bg-white rounded-lg shadow-md p-4 mb-4">
+      <h3 class="text-sm font-semibold text-gray-700 mb-3">Stage-wise vehicles completed</h3>
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+        <div
+          *ngFor="let s of report.StageCounts"
+          class="rounded-lg border border-gray-200 p-3 text-center"
+          [ngClass]="s.Completed_Count > 0 ? 'bg-blue-50 border-blue-200' : 'bg-gray-50'"
+        >
+          <div class="text-2xl font-bold" [ngClass]="s.Completed_Count > 0 ? 'text-blue-700' : 'text-gray-400'">
+            {{ s.Completed_Count }}
+          </div>
+          <div class="text-[11px] text-gray-500 mt-1 leading-tight">{{ s.Stage_Name }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Defects entered today -->
+    <div class="bg-white rounded-lg shadow-md p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-semibold text-gray-700">Defects</h3>
+        <span class="text-xs text-gray-500">Total: <span class="font-semibold text-gray-700">{{ report.TotalDefectsCount }}</span></span>
+      </div>
+
+      <!-- Empty -->
+      <div *ngIf="!hasDefects" class="py-10 text-center text-gray-400">
+        No defects found for this date's vehicles.
+      </div>
+
+      <!-- Table: sticky header + frozen Sr./VIN columns -->
+      <div *ngIf="hasDefects" class="report-scroll rounded-lg border border-gray-200">
+        <table class="rpt text-xs">
+          <thead>
+            <tr>
+              <th class="col-sr">Sr.</th>
+              <th class="col-vin">VIN No</th>
+              <th>Stage</th>
+              <th>Vehicle Area</th>
+              <th>Part</th>
+              <th>Defect</th>
+              <th>Location</th>
+              <th>Severity</th>
+              <th>Attribution</th>
+              <th>Defect Type</th>
+              <th>Auditor</th>
+              <th>Remark</th>
+              <th class="text-center">Rework</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let d of report.Defects; let i = index">
+              <td class="col-sr">{{ i + 1 }}</td>
+              <td class="col-vin whitespace-nowrap">{{ d.VIN_No }}</td>
+              <td class="whitespace-nowrap">{{ d.Stage_Name }}</td>
+              <td>{{ d.Vehicle_Area_Name }}</td>
+              <td>{{ d.Part_Name }}</td>
+              <td>{{ d.Defect_Name }}</td>
+              <td>{{ d.Location_Name }}</td>
+              <td class="text-center">{{ d.Severity_Code }}</td>
+              <td>{{ d.Attribution_Name }}</td>
+              <td>{{ d.Defect_Type_Name }}</td>
+              <td class="whitespace-nowrap">{{ d.Auditor_Name }}</td>
+              <td>{{ d.Remark }}</td>
+              <td class="text-center">
+                <span class="inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold" [ngClass]="reworkClass(d.Rework_Status)">{{ d.Rework_Status }}</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </ng-container>
+</div>

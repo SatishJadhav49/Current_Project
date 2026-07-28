@@ -1,0 +1,132 @@
+<div class="p-4 md:p-6 mx-auto">
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-lg md:text-xl font-bold text-gray-800">WIP / Pending Report</h2>
+    <div class="text-sm text-gray-500" *ngIf="report && !loading">
+      WIP vehicles: <span class="font-semibold text-gray-700">{{ report.TotalWip }}</span>
+    </div>
+  </div>
+
+  <!-- Filter bar card -->
+  <div class="bg-white rounded-lg shadow-md p-4 mb-4">
+    <div class="flex flex-col md:flex-row gap-3 md:items-end">
+      <div class="w-full md:w-64">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Model <span class="text-red-500">*</span></label>
+        <select
+          name="model"
+          [(ngModel)]="selectedModelId"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option [ngValue]="0">Select model…</option>
+          <option *ngFor="let m of models" [ngValue]="m.Model_ID">{{ m.Model_Name }}</option>
+        </select>
+      </div>
+      <div class="w-full md:w-44">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Start Date <span class="text-red-500">*</span></label>
+        <input type="date" name="startDate" [(ngModel)]="startDate"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      </div>
+      <div class="w-full md:w-44">
+        <label class="block text-sm font-medium text-gray-700 mb-1">End Date <span class="text-red-500">*</span></label>
+        <input type="date" name="endDate" [(ngModel)]="endDate"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      </div>
+      <div class="flex gap-2">
+        <button type="button" (click)="search()" [disabled]="loading"
+          class="px-4 py-2 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300">
+          {{ loading ? 'Loading…' : 'Search' }}
+        </button>
+        <button type="button" (click)="clear()"
+          class="px-4 py-2 text-sm font-medium rounded-md text-gray-700 bg-gray-200 hover:bg-gray-300">
+          Clear
+        </button>
+        <button type="button" (click)="downloadExcel()" [disabled]="!report"
+          class="px-4 py-2 text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300">
+          ⬇ Download Excel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="bg-white rounded-lg shadow-md py-12 text-center text-gray-500">Loading report…</div>
+
+  <!-- Prompt -->
+  <div *ngIf="!loading && !searched" class="bg-white rounded-lg shadow-md py-12 text-center text-gray-400">
+    Select a model and date range, then click <span class="font-medium">Search</span>.
+  </div>
+
+  <ng-container *ngIf="!loading && report">
+    <!-- Stuck-per-stage summary -->
+    <div class="bg-white rounded-lg shadow-md p-4 mb-4">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-semibold text-gray-700">Vehicles stuck per stage</h3>
+        <span class="text-xs text-gray-500">Total WIP: <span class="font-semibold text-gray-700">{{ report.TotalWip }}</span></span>
+      </div>
+      <div *ngIf="report.StuckCounts.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+        <div *ngFor="let s of report.StuckCounts"
+          class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-center">
+          <div class="text-2xl font-bold text-amber-700">{{ s.Count }}</div>
+          <div class="text-[11px] text-gray-500 mt-1 leading-tight">{{ s.Stage_Name }}</div>
+        </div>
+      </div>
+      <div *ngIf="report.StuckCounts.length === 0" class="py-6 text-center text-gray-400">
+        No pending vehicles in this range 🎉
+      </div>
+    </div>
+
+    <!-- WIP table -->
+    <div class="bg-white rounded-lg shadow-md p-4">
+      <div class="flex flex-wrap items-center gap-3 mb-3 text-[11px] text-gray-500">
+        <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-gray-300"></span> &lt; 7 idle days</span>
+        <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> 7–13 idle</span>
+        <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-red-500"></span> ≥ 14 idle</span>
+        <span class="ml-auto italic">Sorted by longest idle first</span>
+      </div>
+
+      <div *ngIf="!hasRows" class="py-10 text-center text-gray-400">No pending vehicles found.</div>
+
+      <div *ngIf="hasRows" class="report-scroll rounded-lg border border-gray-200">
+        <table class="rpt text-xs">
+          <thead>
+            <tr>
+              <th class="col-sr">Sr.</th>
+              <th class="col-vin">VIN No</th>
+              <th>Model</th>
+              <th>Vehicle Date</th>
+              <th>Roll Down</th>
+              <th class="text-center">Age (d)</th>
+              <th>Last Stage</th>
+              <th>Last Stage Date</th>
+              <th>Stuck At</th>
+              <th>Last Activity</th>
+              <th class="text-center">Idle (d)</th>
+              <th class="text-center">Pending Concerns</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of report.Rows; let i = index">
+              <td class="col-sr">{{ i + 1 }}</td>
+              <td class="col-vin whitespace-nowrap">{{ row.VIN_No }}</td>
+              <td class="whitespace-nowrap">{{ row.Model_Name }}</td>
+              <td class="whitespace-nowrap">{{ row.Vehicle_Date | date:'dd-MMM-yyyy HH:mm a' }}</td>
+              <td class="whitespace-nowrap">{{ row.Roll_Down_Date | date:'dd-MMM-yyyy HH:mm a' }}</td>
+              <td class="text-center">{{ row.Age_Days }}</td>
+              <td class="whitespace-nowrap">{{ row.Last_Stage_Name }}</td>
+              <td class="whitespace-nowrap">{{ row.Last_Stage_Date | date:'dd-MMM-yyyy HH:mm a' }}</td>
+              <td class="whitespace-nowrap">
+                <span class="inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-100 text-blue-700">{{ row.Stuck_Stage_Name }}</span>
+              </td>
+              <td class="whitespace-nowrap">{{ row.Last_Activity_Date | date:'dd-MMM-yyyy HH:mm a' }}</td>
+              <td class="text-center" [ngClass]="ageClass(row.Idle_Days)">{{ row.Idle_Days }}</td>
+              <td class="text-center">
+                <span *ngIf="row.Pending_Concerns > 0" class="inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold bg-red-100 text-red-700">{{ row.Pending_Concerns }}</span>
+                <span *ngIf="row.Pending_Concerns === 0" class="text-gray-400">0</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </ng-container>
+</div>
