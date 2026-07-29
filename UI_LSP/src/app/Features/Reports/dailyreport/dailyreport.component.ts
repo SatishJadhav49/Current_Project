@@ -7,6 +7,7 @@ import { ToastService } from '../../../services';
 import { VehicleTrackingService } from '../../VehicleTracking/vehicle-tracking.service';
 import { ModelItem } from '../../VehicleTracking/vehicle-tracking.models';
 import {
+  DailyDefectRow,
   DailyReportResponse,
   ReportsService,
 } from '../reports.service';
@@ -65,6 +66,7 @@ export class DailyreportComponent implements OnInit {
 
     this.loading = true;
     this.searched = true;
+    this.clearSeverity();
     this.reportsService
       .getDailyReport({
         Model_ID: this.selectedModelId,
@@ -86,10 +88,66 @@ export class DailyreportComponent implements OnInit {
     this.selectedModelId = 0;
     this.report = null;
     this.searched = false;
+    this.clearSeverity();
   }
 
   get hasDefects(): boolean {
     return (this.report?.Defects?.length ?? 0) > 0;
+  }
+
+  // ─── Headline card values ───────────────────────────────────────────────
+  /** Road Test (Audit_Area_ID = 1) vehicles completed among the day's vehicles. */
+  get roadTestDone(): number {
+    return this.report?.StageCounts.find((s) => s.Audit_Area_ID === 1)?.Completed_Count ?? 0;
+  }
+
+  /** WIP = the day's vehicles that have not yet reached Physical RFD. */
+  get wipCount(): number {
+    if (!this.report) return 0;
+    return Math.max(0, this.report.VehiclesActiveCount - this.report.RfdDoneCount);
+  }
+
+  // ─── Defect summary + severity filter ───────────────────────────────────
+  /** Selected severity code for the table filter; '' = Unrated, null = all. */
+  selectedSeverity: string | null = null;
+
+  /** Severity-wise concern counts, derived from the day's defects (desc). */
+  get severitySummary(): { code: string; label: string; count: number }[] {
+    if (!this.report) return [];
+    const map = new Map<string, number>();
+    for (const d of this.report.Defects) {
+      const code = (d.Severity_Code || '').trim();
+      map.set(code, (map.get(code) ?? 0) + 1);
+    }
+    return Array.from(map.entries())
+      .map(([code, count]) => ({ code, label: code || 'Unrated', count }))
+      .sort((a, b) => b.count - a.count);
+  }
+
+  isSeveritySelected(code: string): boolean {
+    return this.selectedSeverity !== null && this.selectedSeverity === code;
+  }
+
+  /** Click a severity card → filter the table (toggle off if already active). */
+  selectSeverity(code: string): void {
+    this.selectedSeverity = this.selectedSeverity === code ? null : code;
+  }
+
+  clearSeverity(): void {
+    this.selectedSeverity = null;
+  }
+
+  /** Defects after the severity card filter. */
+  get filteredDefects(): DailyDefectRow[] {
+    if (!this.report) return [];
+    if (this.selectedSeverity === null) return this.report.Defects;
+    const target = this.selectedSeverity;
+    return this.report.Defects.filter((d) => (d.Severity_Code || '').trim() === target);
+  }
+
+  get selectedSeverityLabel(): string {
+    if (this.selectedSeverity === null) return '';
+    return this.selectedSeverity || 'Unrated';
   }
 
   private static readonly MONTHS = [
@@ -159,15 +217,16 @@ export class DailyreportComponent implements OnInit {
     s1.addRow([]);
     s1.addRow(['Model', r.Model_Name]);
     s1.addRow(['Date', this.fmtDate(r.ReportDate)]);
+    s1.addRow(['Road Test Done', this.roadTestDone]);
     s1.addRow(['Physical RFD Done', r.RfdDoneCount]);
-    s1.addRow(['Vehicles Active', r.VehiclesActiveCount]);
+    s1.addRow(['WIP', this.wipCount]);
     s1.addRow(['Total Defects', r.TotalDefectsCount]);
     s1.getColumn(1).font = { bold: true };
 
     s1.addRow([]);
-    const stageHdr = s1.addRow(['Stage', 'Completed']);
-    styleHeader(stageHdr);
-    r.StageCounts.forEach((sc) => s1.addRow([sc.Stage_Name, sc.Completed_Count]));
+    const sevHdr = s1.addRow(['Severity', 'Concerns']);
+    styleHeader(sevHdr);
+    this.severitySummary.forEach((sv) => s1.addRow([sv.label, sv.count]));
     s1.getColumn(1).width = 24;
     s1.getColumn(2).width = 18;
 
@@ -181,7 +240,7 @@ export class DailyreportComponent implements OnInit {
     const hRow = s2.addRow(headers);
     styleHeader(hRow);
 
-    r.Defects.forEach((d, i) => {
+    this.filteredDefects.forEach((d, i) => {
       s2.addRow([
         i + 1,
         d.VIN_No,

@@ -78,46 +78,79 @@
   <!-- Report body -->
   <ng-container *ngIf="!loading && report">
     <!-- Headline tiles -->
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-      <div class="bg-white rounded-lg shadow-md p-4 border-l-4 border-emerald-500">
-        <div class="text-xs uppercase tracking-wide text-gray-500">Physical RFD Done</div>
-        <div class="text-3xl font-bold text-emerald-600 mt-1">{{ report.RfdDoneCount }}</div>
-        <div class="text-[11px] text-gray-400 mt-0.5">of this date's vehicles</div>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+      <!-- Yesterday Production — placeholder, live data mapped later -->
+      <div class="bg-white rounded-lg shadow-md p-4 border-l-4 border-gray-300">
+        <div class="text-xs uppercase tracking-wide text-gray-500">Yesterday Production</div>
+        <div class="text-3xl font-bold text-gray-300 mt-1">—</div>
+        <div class="text-[11px] text-gray-400 mt-0.5">live data coming soon</div>
       </div>
       <div class="bg-white rounded-lg shadow-md p-4 border-l-4 border-blue-500">
-        <div class="text-xs uppercase tracking-wide text-gray-500">Vehicles Audited</div>
-        <div class="text-3xl font-bold text-blue-600 mt-1">{{ report.VehiclesActiveCount }}</div>
-        <div class="text-[11px] text-gray-400 mt-0.5">vehicle date on this day</div>
+        <div class="text-xs uppercase tracking-wide text-gray-500">Road Test Done</div>
+        <div class="text-3xl font-bold text-blue-600 mt-1">{{ roadTestDone }}</div>
+        <div class="text-[11px] text-gray-400 mt-0.5">of this date's vehicles</div>
+      </div>
+      <div class="bg-white rounded-lg shadow-md p-4 border-l-4 border-emerald-500">
+        <div class="text-xs uppercase tracking-wide text-gray-500">RFD Done</div>
+        <div class="text-3xl font-bold text-emerald-600 mt-1">{{ report.RfdDoneCount }}</div>
+        <div class="text-[11px] text-gray-400 mt-0.5">physical RFD done</div>
       </div>
       <div class="bg-white rounded-lg shadow-md p-4 border-l-4 border-amber-500">
-        <div class="text-xs uppercase tracking-wide text-gray-500">Total Defects</div>
-        <div class="text-3xl font-bold text-amber-600 mt-1">{{ report.TotalDefectsCount }}</div>
-        <div class="text-[11px] text-gray-400 mt-0.5">across these vehicles</div>
+        <div class="text-xs uppercase tracking-wide text-gray-500">WIP</div>
+        <div class="text-3xl font-bold text-amber-600 mt-1">{{ wipCount }}</div>
+        <div class="text-[11px] text-gray-400 mt-0.5">not yet dispatched</div>
       </div>
     </div>
 
-    <!-- Stage-wise completed today -->
+    <!-- Defect summary — total + severity-wise (click a card to filter table) -->
     <div class="bg-white rounded-lg shadow-md p-4 mb-4">
-      <h3 class="text-sm font-semibold text-gray-700 mb-3">Stage-wise vehicles completed</h3>
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-        <div
-          *ngFor="let s of report.StageCounts"
-          class="rounded-lg border border-gray-200 p-3 text-center"
-          [ngClass]="s.Completed_Count > 0 ? 'bg-blue-50 border-blue-200' : 'bg-gray-50'"
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-semibold text-gray-700">Defect Summary</h3>
+        <span *ngIf="selectedSeverity !== null" class="text-[11px] text-blue-600 italic">
+          Table filtered by severity — click the card again or “Total Defects” to clear
+        </span>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+        <!-- Total defects → clears the severity filter -->
+        <button
+          type="button"
+          (click)="clearSeverity()"
+          class="rounded-lg border p-3 text-center transition"
+          [ngClass]="selectedSeverity === null ? 'bg-amber-50 border-amber-400 ring-2 ring-amber-300' : 'bg-gray-50 border-gray-200 hover:border-amber-300'"
         >
-          <div class="text-2xl font-bold" [ngClass]="s.Completed_Count > 0 ? 'text-blue-700' : 'text-gray-400'">
-            {{ s.Completed_Count }}
-          </div>
-          <div class="text-[11px] text-gray-500 mt-1 leading-tight">{{ s.Stage_Name }}</div>
-        </div>
+          <div class="text-2xl font-bold text-amber-600">{{ report.TotalDefectsCount }}</div>
+          <div class="text-[11px] text-gray-500 mt-1 leading-tight">Total Defects</div>
+        </button>
+        <!-- Severity-wise counts -->
+        <button
+          type="button"
+          *ngFor="let sv of severitySummary"
+          (click)="selectSeverity(sv.code)"
+          class="rounded-lg border p-3 text-center transition"
+          [ngClass]="isSeveritySelected(sv.code) ? 'bg-blue-50 border-blue-400 ring-2 ring-blue-300' : 'bg-red-50 border-red-200 hover:border-blue-300'"
+        >
+          <div class="text-2xl font-bold text-red-600">{{ sv.count }}</div>
+          <div class="text-[11px] text-gray-500 mt-1 leading-tight">{{ sv.label }}</div>
+        </button>
+      </div>
+      <div *ngIf="!hasDefects" class="py-4 text-center text-gray-400 text-sm">
+        No defects for this date's vehicles.
       </div>
     </div>
 
     <!-- Defects entered today -->
     <div class="bg-white rounded-lg shadow-md p-4">
-      <div class="flex items-center justify-between mb-3">
+      <div class="flex flex-wrap items-center gap-2 mb-3">
         <h3 class="text-sm font-semibold text-gray-700">Defects</h3>
-        <span class="text-xs text-gray-500">Total: <span class="font-semibold text-gray-700">{{ report.TotalDefectsCount }}</span></span>
+        <span *ngIf="selectedSeverity !== null"
+          class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[11px] font-semibold">
+          Severity: {{ selectedSeverityLabel }}
+          <button type="button" (click)="clearSeverity()" class="ml-1 text-blue-500 hover:text-blue-800">✕</button>
+        </span>
+        <span class="ml-auto text-xs text-gray-500">
+          Showing <span class="font-semibold text-gray-700">{{ filteredDefects.length }}</span>
+          of {{ report.TotalDefectsCount }}
+        </span>
       </div>
 
       <!-- Empty -->
@@ -125,8 +158,13 @@
         No defects found for this date's vehicles.
       </div>
 
+      <!-- No match for the severity filter -->
+      <div *ngIf="hasDefects && filteredDefects.length === 0" class="py-10 text-center text-gray-400">
+        No defects for the selected severity.
+      </div>
+
       <!-- Table: sticky header + frozen Sr./VIN columns -->
-      <div *ngIf="hasDefects" class="report-scroll rounded-lg border border-gray-200">
+      <div *ngIf="filteredDefects.length > 0" class="report-scroll rounded-lg border border-gray-200">
         <table class="rpt text-xs">
           <thead>
             <tr>
@@ -146,7 +184,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let d of report.Defects; let i = index">
+            <tr *ngFor="let d of filteredDefects; let i = index">
               <td class="col-sr">{{ i + 1 }}</td>
               <td class="col-vin whitespace-nowrap">{{ d.VIN_No }}</td>
               <td class="whitespace-nowrap">{{ d.Stage_Name }}</td>
