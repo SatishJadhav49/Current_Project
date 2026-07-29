@@ -24,6 +24,8 @@ export class TatreportComponent implements OnInit {
   selectedModelId = 0;
   startDate = '';
   endDate = '';
+  /** Optional VIN — when set, TAT is computed for that vehicle only. */
+  vinNo = '';
 
   report: TatReportResponse | null = null;
   loading = false;
@@ -54,17 +56,23 @@ export class TatreportComponent implements OnInit {
   }
 
   search(): void {
-    if (this.selectedModelId <= 0) {
-      this.toast.showError('Model required', 'Please select a model.');
-      return;
-    }
-    if (!this.startDate || !this.endDate) {
-      this.toast.showError('Dates required', 'Please select start and end dates.');
-      return;
-    }
-    if (this.endDate < this.startDate) {
-      this.toast.showError('Invalid range', 'End date cannot be before start date.');
-      return;
+    const vin = this.vinNo.trim();
+    const hasVin = vin.length > 0;
+
+    // VIN overrides Model + date range; otherwise Model + range are required.
+    if (!hasVin) {
+      if (this.selectedModelId <= 0) {
+        this.toast.showError('Model or VIN required', 'Select a model or enter a VIN.');
+        return;
+      }
+      if (!this.startDate || !this.endDate) {
+        this.toast.showError('Dates required', 'Please select start and end dates.');
+        return;
+      }
+      if (this.endDate < this.startDate) {
+        this.toast.showError('Invalid range', 'End date cannot be before start date.');
+        return;
+      }
     }
 
     this.loading = true;
@@ -74,6 +82,7 @@ export class TatreportComponent implements OnInit {
         Model_ID: this.selectedModelId,
         StartDate: this.startDate,
         EndDate: this.endDate,
+        Vin_No: vin,
       })
       .subscribe({
         next: (data) => {
@@ -91,6 +100,7 @@ export class TatreportComponent implements OnInit {
     this.selectedModelId = 0;
     this.report = null;
     this.searched = false;
+    this.vinNo = '';
   }
 
   get hasTransitions(): boolean {

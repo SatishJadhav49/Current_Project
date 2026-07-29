@@ -74,6 +74,7 @@ namespace API_LSP.Models.DTOs
         public string Model_Name { get; set; } = string.Empty;
         public DateTime? Vehicle_Date { get; set; }
         public DateTime? Roll_Down_Date { get; set; }
+        public DateTime? RoadTest_Date { get; set; }
         public int Age_Days { get; set; }
         public string Last_Stage_Name { get; set; } = string.Empty;
         public DateTime? Last_Stage_Date { get; set; }
@@ -96,12 +97,16 @@ namespace API_LSP.Models.DTOs
 
     // ─── Stage TAT (Turnaround) Report ──────────────────────────────────────
 
-    /// <summary>Filter payload for the TAT report — Model + vehicle-date range.</summary>
+    /// <summary>
+    /// Filter payload for the TAT report — Model + vehicle-date range, or a
+    /// single VIN (when Vin_No is set, Model/date are ignored).
+    /// </summary>
     public class TatReportRequest
     {
         public decimal Model_ID { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
+        public string? Vin_No { get; set; }
     }
 
     /// <summary>Average/min/max time between two consecutive stages (hours).</summary>

@@ -295,6 +295,10 @@ namespace API_LSP.Data
                         completed[vid] = set = new HashSet<decimal>();
                     set.Add(areaId);
 
+                    // Road Test (area 1) log date — surfaced as the row's Road Test Date.
+                    if (areaId == 1m && logDate.HasValue)
+                        vehicles[vid].RoadTest_Date = logDate;
+
                     if (logDate.HasValue &&
                         (!lastActivity.TryGetValue(vid, out var la) || logDate.Value > la.Date))
                         lastActivity[vid] = (logDate.Value, areaId);
@@ -381,18 +385,45 @@ namespace API_LSP.Data
         /// (stages are upserts, so timings are approximate).
         /// </summary>
         public async Task<TatReportResponse> GetTatReport(
-            decimal modelId, DateTime startDate, DateTime endDate)
+            decimal modelId, DateTime startDate, DateTime endDate, string? vin = null)
         {
             var result = new TatReportResponse { StartDate = startDate.Date, EndDate = endDate.Date };
             var start = startDate.Date;
             var end = endDate.Date;
+            bool vinMode = !string.IsNullOrWhiteSpace(vin);
+            var vinPattern = "%" + (vin ?? string.Empty).Trim();
 
             using var connection = await _connectionFactory.CreateConnectionAsync();
 
-            // Model name.
-            using (var cmd = new SqlCommand(
-                "SELECT ISNULL(Model_Name, '') FROM MM_Model WHERE Model_ID = @Model_ID", connection))
+            // Vehicle filter — a single VIN (any model/date) or Model + date range.
+            string vehFilter = vinMode
+                ? "(v.Is_Deleted IS NULL OR v.Is_Deleted = 0) AND v.VIN_No LIKE @Vin"
+                : "v.Model_ID = @Model_ID AND (v.Is_Deleted IS NULL OR v.Is_Deleted = 0) AND CAST(v.Inserted_Date AS date) BETWEEN @Start AND @End";
+            void AddFilterParams(SqlCommand cmd)
             {
+                if (vinMode) cmd.Parameters.AddWithValue("@Vin", vinPattern);
+                else
+                {
+                    cmd.Parameters.AddWithValue("@Model_ID", modelId);
+                    cmd.Parameters.AddWithValue("@Start", start);
+                    cmd.Parameters.AddWithValue("@End", end);
+                }
+            }
+
+            // Model name — from the VIN's vehicle in VIN mode, else the picked model.
+            if (vinMode)
+            {
+                using var cmd = new SqlCommand(
+                    "SELECT TOP 1 ISNULL(m.Model_Name, '') FROM MM_Vehicle_Details v " +
+                    "LEFT JOIN MM_Model m ON m.Model_ID = v.Model_ID WHERE v.VIN_No LIKE @Vin", connection);
+                cmd.Parameters.AddWithValue("@Vin", vinPattern);
+                var name = await cmd.ExecuteScalarAsync();
+                result.Model_Name = name == null || name == DBNull.Value ? string.Empty : (string)name;
+            }
+            else
+            {
+                using var cmd = new SqlCommand(
+                    "SELECT ISNULL(Model_Name, '') FROM MM_Model WHERE Model_ID = @Model_ID", connection);
                 cmd.Parameters.AddWithValue("@Model_ID", modelId);
                 var name = await cmd.ExecuteScalarAsync();
                 result.Model_Name = name == null || name == DBNull.Value ? string.Empty : (string)name;
@@ -414,17 +445,13 @@ namespace API_LSP.Data
 
             // Vehicles in range + their Roll Down date.
             var rollDown = new Dictionary<decimal, DateTime?>();
-            const string vehQuery = @"
+            string vehQuery = $@"
                 SELECT v.Vehicle_ID, v.Roll_Down_Date
                 FROM MM_Vehicle_Details v
-                WHERE v.Model_ID = @Model_ID
-                  AND (v.Is_Deleted IS NULL OR v.Is_Deleted = 0)
-                  AND CAST(v.Inserted_Date AS date) BETWEEN @Start AND @End";
+                WHERE {vehFilter}";
             using (var cmd = new SqlCommand(vehQuery, connection))
             {
-                cmd.Parameters.AddWithValue("@Model_ID", modelId);
-                cmd.Parameters.AddWithValue("@Start", start);
-                cmd.Parameters.AddWithValue("@End", end);
+                AddFilterParams(cmd);
                 using var reader = await cmd.ExecuteReaderAsync();
                 while (await reader.ReadAsync())
                     rollDown[reader.GetDecimal(0)] =
@@ -436,19 +463,15 @@ namespace API_LSP.Data
             var stageDates = new Dictionary<decimal, Dictionary<decimal, DateTime>>();
             if (rollDown.Count > 0)
             {
-                const string logQuery = @"
+                string logQuery = $@"
                     SELECT tl.Vehicle_ID, tl.Audit_Area_ID, tl.Log_Date
                     FROM MM_Vehicle_Track_Logs tl
                     INNER JOIN MM_Vehicle_Details v ON v.Vehicle_ID = tl.Vehicle_ID
-                    WHERE v.Model_ID = @Model_ID
-                      AND (v.Is_Deleted IS NULL OR v.Is_Deleted = 0)
+                    WHERE {vehFilter}
                       AND (tl.Is_Deleted IS NULL OR tl.Is_Deleted = 0)
-                      AND CAST(v.Inserted_Date AS date) BETWEEN @Start AND @End
                       AND tl.Log_Date IS NOT NULL";
                 using var cmd = new SqlCommand(logQuery, connection);
-                cmd.Parameters.AddWithValue("@Model_ID", modelId);
-                cmd.Parameters.AddWithValue("@Start", start);
-                cmd.Parameters.AddWithValue("@End", end);
+                AddFilterParams(cmd);
                 using var reader = await cmd.ExecuteReaderAsync();
                 while (await reader.ReadAsync())
                 {
@@ -506,6 +529,30 @@ namespace API_LSP.Data
                     Vehicle_Count = agg.cnt,
                 });
             }
+
+            // Custom second row: Road Test (1) → Physical RFD (11), inserted right
+            // after "Roll Down → Road Test"; the per-stage transitions follow.
+            var rtToRfd = new List<double>();
+            foreach (var vid in rollDown.Keys)
+            {
+                if (stageDates.TryGetValue(vid, out var m) &&
+                    m.TryGetValue(1m, out var rt) && m.TryGetValue(11m, out var rfd) &&
+                    (rfd - rt).TotalHours > 0)
+                    rtToRfd.Add((rfd - rt).TotalHours);
+            }
+            var rtAgg = Aggregate(rtToRfd);
+            string rtName = stageOrder.FirstOrDefault(s => s.Id == 1m).Name;
+            string rfdName = stageOrder.FirstOrDefault(s => s.Id == 11m).Name;
+            result.Transitions.Insert(result.Transitions.Count >= 1 ? 1 : result.Transitions.Count,
+                new TatTransition
+                {
+                    From_Stage = string.IsNullOrEmpty(rtName) ? "Road Test" : rtName,
+                    To_Stage = string.IsNullOrEmpty(rfdName) ? "Physical RFD" : rfdName,
+                    Avg_Hours = Math.Round(rtAgg.avg, 2),
+                    Min_Hours = Math.Round(rtAgg.min, 2),
+                    Max_Hours = Math.Round(rtAgg.max, 2),
+                    Vehicle_Count = rtAgg.cnt,
+                });
 
             // Overall cycle: Roll Down → RFD (area 11), computed directly.
             var overall = new List<double>();

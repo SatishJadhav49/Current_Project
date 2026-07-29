@@ -119,20 +119,21 @@ namespace API_LSP.Controllers
         {
             try
             {
-                if (req == null || req.Model_ID <= 0)
+                bool hasVin = req != null && !string.IsNullOrWhiteSpace(req.Vin_No);
+                if (req == null || (!hasVin && req.Model_ID <= 0))
                 {
                     var bad = _responseHelper.CreateErrorResponse<TatReportResponse>(
-                        "Validation Error", "Model is required.");
+                        "Validation Error", "Model or VIN is required.");
                     return BadRequest(bad);
                 }
-                if (req.EndDate.Date < req.StartDate.Date)
+                if (!hasVin && req.EndDate.Date < req.StartDate.Date)
                 {
                     var bad = _responseHelper.CreateErrorResponse<TatReportResponse>(
                         "Validation Error", "End date cannot be before start date.");
                     return BadRequest(bad);
                 }
 
-                var data = await _service.GetTatReport(req.Model_ID, req.StartDate, req.EndDate);
+                var data = await _service.GetTatReport(req.Model_ID, req.StartDate, req.EndDate, req.Vin_No);
                 var ok = _responseHelper.CreateSuccessResponse(data, "Success", "Report generated.");
                 return Ok(ok);
             }

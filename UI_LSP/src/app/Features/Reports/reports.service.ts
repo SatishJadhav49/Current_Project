@@ -100,6 +100,7 @@ export interface WipRow {
   Model_Name: string;
   Vehicle_Date: string | null;
   Roll_Down_Date: string | null;
+  RoadTest_Date: string | null;
   Age_Days: number;
   Last_Stage_Name: string;
   Last_Stage_Date: string | null;
@@ -122,6 +123,7 @@ export interface TatReportRequest {
   Model_ID: number;
   StartDate: string;
   EndDate: string;
+  Vin_No?: string;
 }
 export interface TatTransition {
   From_Stage: string;

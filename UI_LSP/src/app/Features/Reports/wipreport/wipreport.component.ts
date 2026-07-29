@@ -6,7 +6,7 @@ import { saveAs } from 'file-saver';
 import { ToastService } from '../../../services';
 import { VehicleTrackingService } from '../../VehicleTracking/vehicle-tracking.service';
 import { ModelItem } from '../../VehicleTracking/vehicle-tracking.models';
-import { ReportsService, WipReportResponse } from '../reports.service';
+import { ReportsService, WipReportResponse, WipRow } from '../reports.service';
 import { interval, Subscription } from 'rxjs';
 @Component({
   selector: 'app-wipreport',
@@ -109,6 +109,7 @@ export class WipreportComponent implements OnInit {
 
     this.loading = true;
     this.searched = true;
+    this.clearStuckStage();
     this.reportsService
       .getWipReport({
         Model_ID: this.selectedModelId,
@@ -131,10 +132,51 @@ export class WipreportComponent implements OnInit {
     this.selectedModelId = 0;
     this.report = null;
     this.searched = false;
+    this.clearStuckStage();
   }
 
   get hasRows(): boolean {
     return (this.report?.Rows?.length ?? 0) > 0;
+  }
+
+  // ─── Stuck-stage card filter ────────────────────────────────────────────
+  /** Selected stuck-stage name for the table filter; null = all. */
+  selectedStuckStage: string | null = null;
+
+  isStuckSelected(name: string): boolean {
+    return this.selectedStuckStage === name;
+  }
+
+  /** Click a stuck-stage card → filter the table (toggle off if active). */
+  selectStuckStage(name: string): void {
+    this.selectedStuckStage = this.selectedStuckStage === name ? null : name;
+  }
+
+  clearStuckStage(): void {
+    this.selectedStuckStage = null;
+  }
+
+  /** WIP rows after the stuck-stage card filter. */
+  get filteredRows(): WipRow[] {
+    if (!this.report) return [];
+    if (this.selectedStuckStage === null) return this.report.Rows;
+    return this.report.Rows.filter((r) => r.Stuck_Stage_Name === this.selectedStuckStage);
+  }
+
+  /** Age since Road Test → now, as "Xd Yh Zm". '–' when no Road Test date. */
+  fmtAge(value: string | null): string {
+    if (!value) return '–';
+    const start = new Date(value).getTime();
+    if (isNaN(start)) return '–';
+    let mins = Math.round((Date.now() - start) / 60000);
+    if (mins < 0) mins = 0;
+    const days = Math.floor(mins / 1440);
+    mins -= days * 1440;
+    const hours = Math.floor(mins / 60);
+    mins -= hours * 60;
+    if (days > 0) return `${days}d ${hours}h ${mins}m`;
+    if (hours > 0) return `${hours}h ${mins}m`;
+    return `${mins}m`;
   }
 
   private static readonly MONTHS = [
@@ -197,19 +239,19 @@ export class WipreportComponent implements OnInit {
     // Detail sheet
     const s2 = workbook.addWorksheet('WIP Vehicles');
     const headers = [
-      'Sr.No', 'VIN No', 'Model', 'Vehicle Date', 'Roll Down Date', 'Age (days)',
+      'Sr.No', 'VIN No', 'Model', 'Roll Down Date', 'Road Test Date', 'Age (since RT)',
       'Last Stage', 'Last Stage Date', 'Stuck At', 'Last Activity', 'Idle (days)',
       'Pending Concerns',
     ];
     styleHeader(s2.addRow(headers));
-    r.Rows.forEach((row, i) => {
+    this.filteredRows.forEach((row, i) => {
       s2.addRow([
         i + 1,
         row.VIN_No,
         row.Model_Name,
-        this.fmtDate(row.Vehicle_Date),
         this.fmtDate(row.Roll_Down_Date),
-        row.Age_Days,
+        this.fmtDate(row.RoadTest_Date),
+        this.fmtAge(row.RoadTest_Date),
         row.Last_Stage_Name,
         this.fmtDate(row.Last_Stage_Date),
         row.Stuck_Stage_Name,

@@ -111,7 +111,18 @@ export class DailyreportComponent implements OnInit {
   /** Selected severity code for the table filter; '' = Unrated, null = all. */
   selectedSeverity: string | null = null;
 
-  /** Severity-wise concern counts, derived from the day's defects (desc). */
+  /** Fixed display order for severity cards; anything else falls to the end. */
+  private static readonly SEVERITY_ORDER = ['V1+', 'V1', 'V2', 'V3'];
+
+  private severityRank(code: string): number {
+    const i = DailyreportComponent.SEVERITY_ORDER.indexOf((code || '').toUpperCase());
+    return i === -1 ? 999 : i;
+  }
+
+  /**
+   * Severity-wise concern counts, derived from the day's defects, ordered
+   * V1+ → V1 → V2 → V3 (unknown/blank severities after, by count).
+   */
   get severitySummary(): { code: string; label: string; count: number }[] {
     if (!this.report) return [];
     const map = new Map<string, number>();
@@ -121,7 +132,11 @@ export class DailyreportComponent implements OnInit {
     }
     return Array.from(map.entries())
       .map(([code, count]) => ({ code, label: code || 'Unrated', count }))
-      .sort((a, b) => b.count - a.count);
+      .sort((a, b) => {
+        const ra = this.severityRank(a.code);
+        const rb = this.severityRank(b.code);
+        return ra !== rb ? ra - rb : b.count - a.count;
+      });
   }
 
   isSeveritySelected(code: string): boolean {
