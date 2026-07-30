@@ -77,18 +77,40 @@
 
   <!-- Report body -->
   <ng-container *ngIf="!loading && report">
-    <!-- Headline tiles -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-      <!-- Yesterday Production — placeholder, live data mapped later -->
+    <!-- Headline tiles: production (static, live later) + our audit data -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+      <!-- Static production cards — live data mapped later -->
       <div class="bg-white rounded-lg shadow-md p-4 border-l-4 border-gray-300">
-        <div class="text-xs uppercase tracking-wide text-gray-500">Yesterday Production</div>
+        <div class="text-xs uppercase tracking-wide text-gray-500">CAI Out</div>
         <div class="text-3xl font-bold text-gray-300 mt-1">—</div>
-        <div class="text-[11px] text-gray-400 mt-0.5">live data coming soon</div>
+        <div class="text-[11px] text-gray-400 mt-0.5">production · live soon</div>
       </div>
+      <div class="bg-white rounded-lg shadow-md p-4 border-l-4 border-gray-300">
+        <div class="text-xs uppercase tracking-wide text-gray-500">FAI Out</div>
+        <div class="text-3xl font-bold text-gray-300 mt-1">—</div>
+        <div class="text-[11px] text-gray-400 mt-0.5">production · live soon</div>
+      </div>
+      <div class="bg-white rounded-lg shadow-md p-4 border-l-4 border-gray-300">
+        <div class="text-xs uppercase tracking-wide text-gray-500">TCF WIP</div>
+        <div class="text-3xl font-bold text-gray-300 mt-1">—</div>
+        <div class="text-[11px] text-gray-400 mt-0.5">CAI − FAI · live soon</div>
+      </div>
+
+      <!-- Dynamic audit cards -->
       <div class="bg-white rounded-lg shadow-md p-4 border-l-4 border-blue-500">
         <div class="text-xs uppercase tracking-wide text-gray-500">Road Test Done</div>
         <div class="text-3xl font-bold text-blue-600 mt-1">{{ roadTestDone }}</div>
         <div class="text-[11px] text-gray-400 mt-0.5">of this date's vehicles</div>
+      </div>
+      <div class="bg-white rounded-lg shadow-md p-4 border-l-4 border-indigo-500">
+        <div class="text-xs uppercase tracking-wide text-gray-500">Static Check Done</div>
+        <div class="text-3xl font-bold text-indigo-600 mt-1">{{ staticCheckDone }}</div>
+        <div class="text-[11px] text-gray-400 mt-0.5">static audit completed</div>
+      </div>
+      <div class="bg-white rounded-lg shadow-md p-4 border-l-4 border-purple-500">
+        <div class="text-xs uppercase tracking-wide text-gray-500">Rework Done</div>
+        <div class="text-3xl font-bold text-purple-600 mt-1">{{ reworkDone }}</div>
+        <div class="text-[11px] text-gray-400 mt-0.5">all concerns reworked</div>
       </div>
       <div class="bg-white rounded-lg shadow-md p-4 border-l-4 border-emerald-500">
         <div class="text-xs uppercase tracking-wide text-gray-500">RFD Done</div>

@@ -116,13 +116,18 @@ export class TatreportComponent implements OnInit {
     );
   }
 
-  /** Hours → human duration: "3.2 h", "1 d 4 h", "6 d". Blank when no data. */
+  /** Hours → day/hour/minute duration: "2d 5h 30m", "5h 12m", "45m". Blank when no data. */
   fmtDuration(hours: number, count: number): string {
     if (count === 0) return '—';
-    if (hours < 24) return `${hours.toFixed(1)} h`;
-    const days = Math.floor(hours / 24);
-    const rem = Math.round(hours - days * 24);
-    return rem > 0 ? `${days} d ${rem} h` : `${days} d`;
+    let mins = Math.round(hours * 60);
+    if (mins < 0) mins = 0;
+    const days = Math.floor(mins / 1440);
+    mins -= days * 1440;
+    const h = Math.floor(mins / 60);
+    mins -= h * 60;
+    if (days > 0) return `${days}d ${h}h ${mins}m`;
+    if (h > 0) return `${h}h ${mins}m`;
+    return `${mins}m`;
   }
 
   private static readonly MONTHS = [

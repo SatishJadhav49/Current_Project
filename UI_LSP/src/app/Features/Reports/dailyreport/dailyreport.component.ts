@@ -96,9 +96,23 @@ export class DailyreportComponent implements OnInit {
   }
 
   // ─── Headline card values ───────────────────────────────────────────────
+  private stageDone(auditAreaId: number): number {
+    return this.report?.StageCounts.find((s) => s.Audit_Area_ID === auditAreaId)?.Completed_Count ?? 0;
+  }
+
   /** Road Test (Audit_Area_ID = 1) vehicles completed among the day's vehicles. */
   get roadTestDone(): number {
-    return this.report?.StageCounts.find((s) => s.Audit_Area_ID === 1)?.Completed_Count ?? 0;
+    return this.stageDone(1);
+  }
+
+  /** Static Audit (Audit_Area_ID = 6) vehicles completed. */
+  get staticCheckDone(): number {
+    return this.stageDone(6);
+  }
+
+  /** Rework (Audit_Area_ID = 9) vehicles with all concerns reworked. */
+  get reworkDone(): number {
+    return this.stageDone(9);
   }
 
   /** WIP = the day's vehicles that have not yet reached Physical RFD. */
@@ -233,7 +247,9 @@ export class DailyreportComponent implements OnInit {
     s1.addRow(['Model', r.Model_Name]);
     s1.addRow(['Date', this.fmtDate(r.ReportDate)]);
     s1.addRow(['Road Test Done', this.roadTestDone]);
-    s1.addRow(['Physical RFD Done', r.RfdDoneCount]);
+    s1.addRow(['Static Check Done', this.staticCheckDone]);
+    s1.addRow(['Rework Done', this.reworkDone]);
+    s1.addRow(['RFD Done', r.RfdDoneCount]);
     s1.addRow(['WIP', this.wipCount]);
     s1.addRow(['Total Defects', r.TotalDefectsCount]);
     s1.getColumn(1).font = { bold: true };
