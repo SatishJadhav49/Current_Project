@@ -18,6 +18,23 @@ export class MasterService {
     return this.apiRequest.get('MM_Common/GetAuditAreaList');
   }
 
+  //***************************** Defect ↔ Stage Mapping ***********************************//
+  /** Entry stages with their mapped-defect counts. */
+  getDefectStageSummaries(): Observable<any[]> {
+    return this.apiRequest.get('MM_Defect_Stage_Mapping/GetStageSummaries');
+  }
+
+  /** Defect_IDs currently mapped to one stage. */
+  getDefectStageIds(auditAreaId: number): Observable<number[]> {
+    return this.apiRequest.get(`MM_Defect_Stage_Mapping/GetStageDefectIds/${auditAreaId}`);
+  }
+
+  /** Replace the full defect set mapped to a stage. */
+  saveDefectStageMapping(payload: any): Observable<any> {
+    return this.apiRequest.postForGet('MM_Defect_Stage_Mapping/SaveStageMapping', payload);
+  }
+  //***************************** Defect ↔ Stage Mapping end ***********************************//
+
   //***************************** Attribution Services start ***********************************//
   getAllAttributions(): Observable<AttributionMaster[]> {
     return this.apiRequest.get('MM_Attribution_Master/GetAllAttributions');

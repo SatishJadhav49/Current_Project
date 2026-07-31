@@ -48,5 +48,12 @@ export const MastersRoutes: Routes = [
       import('./areaimage/areaimage.component').then(
         (m) => m.AreaImageMasterComponent,
       ),
+  },
+  {
+    path: 'defectstagemapping',
+    loadComponent: () =>
+      import('./defectstagemapping/defectstagemapping.component').then(
+        (m) => m.DefectStageMappingComponent,
+      ),
   }
 ];

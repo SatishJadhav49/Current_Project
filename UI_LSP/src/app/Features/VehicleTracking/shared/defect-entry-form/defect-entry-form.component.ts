@@ -85,6 +85,11 @@ export class DefectEntryFormComponent implements OnInit {
    *  hotspot hit on the Paint Verification screen). Null = show all parts. */
   @Input() partFilterIds: number[] | null = null;
 
+  /** Stage this form belongs to. When > 0, the Defect column shows only the
+   *  defects mapped to that stage (or all defects when the stage is unmapped).
+   *  Null / 0 → all defects. */
+  @Input() auditAreaId: number | null = null;
+
   /** User tapped "+ Add Concern" — parent should save to server then update [concerns]. */
   @Output() addRequest = new EventEmitter<ConcernRow>();
 
@@ -131,7 +136,12 @@ export class DefectEntryFormComponent implements OnInit {
   private loadMasters() {
     this.vehicleService.getVehicleAreas().subscribe((d) => (this.vehicleAreas = d ?? []));
     this.vehicleService.getParts().subscribe((d) => (this.parts = d ?? []));
-    this.vehicleService.getDefects().subscribe((d) => (this.defects = d ?? []));
+    // Stage-scoped defect list when a stage is set (mapped, or all as fallback).
+    const defects$ =
+      this.auditAreaId && this.auditAreaId > 0
+        ? this.vehicleService.getMappedDefects(this.auditAreaId)
+        : this.vehicleService.getDefects();
+    defects$.subscribe((d) => (this.defects = d ?? []));
     this.vehicleService.getLocations().subscribe((d) => (this.locations = d ?? []));
     this.vehicleService.getSeverities().subscribe((d) => (this.severities = d ?? []));
     this.vehicleService.getAttributions().subscribe((d) => (this.attributions = d ?? []));

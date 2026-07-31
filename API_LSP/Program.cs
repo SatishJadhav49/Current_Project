@@ -45,6 +45,7 @@ builder.Services.AddScoped<MM_Vehicle_TrackingDataService>();
 builder.Services.AddScoped<MM_ShowerTestDataService>();
 builder.Services.AddScoped<MM_Area_ImageDataService>();
 builder.Services.AddScoped<MM_ReportsDataService>();
+builder.Services.AddScoped<MM_Defect_Stage_MappingDataService>();
 
 
 

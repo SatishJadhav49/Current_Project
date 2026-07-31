@@ -1,0 +1,74 @@
+<div class="p-4 md:p-6 mx-auto">
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-lg md:text-xl font-bold text-gray-800">Defect ↔ Stage Mapping</h2>
+    <div class="text-xs text-gray-500 italic">A stage with no mapping shows all defects during entry.</div>
+  </div>
+
+  <!-- Stage summary chips -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+    <button
+      type="button"
+      *ngFor="let s of stages"
+      (click)="selectedStageId = s.Audit_Area_ID; onStageChange()"
+      class="rounded-lg border p-3 text-left transition"
+      [ngClass]="selectedStageId === s.Audit_Area_ID ? 'bg-blue-50 border-blue-400 ring-2 ring-blue-300' : 'bg-white border-gray-200 hover:border-blue-300'"
+    >
+      <div class="text-sm font-semibold text-gray-800">{{ s.Audit_Area_Name }}</div>
+      <div class="text-[11px] text-gray-500 mt-0.5">
+        <span *ngIf="s.Mapped_Count > 0" class="font-semibold text-blue-700">{{ s.Mapped_Count }}</span>
+        <span *ngIf="s.Mapped_Count > 0"> mapped</span>
+        <span *ngIf="s.Mapped_Count === 0" class="text-gray-400">all defects (unmapped)</span>
+      </div>
+    </button>
+  </div>
+
+  <!-- Mapping editor -->
+  <div class="bg-white rounded-lg shadow-md p-4">
+    <!-- Prompt -->
+    <div *ngIf="selectedStageId <= 0" class="py-12 text-center text-gray-400">
+      Select a stage above to map its defects.
+    </div>
+
+    <ng-container *ngIf="selectedStageId > 0">
+      <div class="flex flex-wrap items-center gap-3 mb-3">
+        <h3 class="text-sm font-semibold text-gray-700">
+          Defects for <span class="text-blue-700">{{ selectedStageName }}</span>
+        </h3>
+        <span class="text-[11px] text-gray-500">{{ checked.size }} selected</span>
+        <div class="ml-auto flex items-center gap-2">
+          <input
+            type="text"
+            [(ngModel)]="search"
+            placeholder="Search defects…"
+            class="px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <button type="button" (click)="selectAllVisible()"
+            class="px-3 py-1.5 text-xs font-medium rounded-md text-gray-700 bg-gray-200 hover:bg-gray-300">Select shown</button>
+          <button type="button" (click)="clearAll()"
+            class="px-3 py-1.5 text-xs font-medium rounded-md text-gray-700 bg-gray-200 hover:bg-gray-300">Clear</button>
+          <button type="button" (click)="save()" [disabled]="!canSave || saving"
+            class="px-4 py-1.5 text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300">
+            {{ saving ? 'Saving…' : 'Save' }}
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="loadingDefects" class="py-8 text-center text-gray-500">Loading…</div>
+
+      <div *ngIf="!loadingDefects" class="max-h-[55vh] overflow-auto border border-gray-200 rounded-md">
+        <label
+          *ngFor="let d of filteredDefects()"
+          class="flex items-center gap-2 px-3 py-2 border-b last:border-b-0 hover:bg-gray-50 cursor-pointer"
+        >
+          <input type="checkbox" [checked]="isChecked(d.Defect_ID)" (change)="toggle(d.Defect_ID)"
+            class="w-4 h-4 accent-blue-600" />
+          <span class="text-sm text-gray-800">{{ d.Defect_Name }}</span>
+        </label>
+        <div *ngIf="filteredDefects().length === 0" class="px-3 py-6 text-center text-gray-400 text-sm">
+          No defects match your search.
+        </div>
+      </div>
+    </ng-container>
+  </div>
+</div>

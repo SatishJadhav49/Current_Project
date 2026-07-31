@@ -133,6 +133,11 @@ export class VehicleTrackingService {
     return this.apiRequest.get('MM_Defect_Master/GetAllDefects');
   }
 
+  /** Defects mapped to a stage (falls back to all defects when unmapped). */
+  getMappedDefects(auditAreaId: number): Observable<DefectItem[]> {
+    return this.apiRequest.get(`MM_Defect_Stage_Mapping/GetMappedDefects/${auditAreaId}`);
+  }
+
   getLocations(): Observable<LocationItem[]> {
     return this.apiRequest.get('MM_Location_Master/GetAllLocations');
   }
