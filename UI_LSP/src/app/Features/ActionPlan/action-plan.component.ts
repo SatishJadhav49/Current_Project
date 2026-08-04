@@ -137,11 +137,16 @@ export class ActionPlanComponent implements OnInit {
     return `${day}-${ActionPlanComponent.MONTHS[d.getMonth()]}-${d.getFullYear()}`;
   }
 
+  get selectedModelName(): string {
+    return this.models.find((m) => m.Model_ID === this.selectedModelId)?.Model_Name ?? '';
+  }
+
   /** Open the full-page editor, carrying the problem identity + labels. */
   openPlan(p: ActionPlanProblem): void {
     this.router.navigate(['/action/edit'], {
       queryParams: {
         modelId: p.Model_ID,
+        modelName: this.selectedModelName,
         partId: p.Part_ID,
         defectId: p.Defect_ID,
         attributionId: p.Attribution_ID,

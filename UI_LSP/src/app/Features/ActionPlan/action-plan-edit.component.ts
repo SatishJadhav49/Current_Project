@@ -27,6 +27,7 @@ export class ActionPlanEditComponent implements OnInit {
   defectId = 0;
   attributionId = 0;
   severityId = 0;
+  modelName = '';
   partName = '';
   defectName = '';
   attributionName = '';
@@ -47,6 +48,7 @@ export class ActionPlanEditComponent implements OnInit {
     this.defectId = Number(q.get('defectId')) || 0;
     this.attributionId = Number(q.get('attributionId')) || 0;
     this.severityId = Number(q.get('severityId')) || 0;
+    this.modelName = q.get('modelName') ?? '';
     this.partName = q.get('partName') ?? '';
     this.defectName = q.get('defectName') ?? '';
     this.attributionName = q.get('attributionName') ?? '';
