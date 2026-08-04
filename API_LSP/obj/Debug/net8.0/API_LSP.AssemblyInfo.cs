@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("API_LSP")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e73f9851e526dcc78eb1e240f518347614d878f5")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0744446bdbb92c9920c31eb68ead206a7fa8f68d")]
 [assembly: System.Reflection.AssemblyProductAttribute("API_LSP")]
 [assembly: System.Reflection.AssemblyTitleAttribute("API_LSP")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

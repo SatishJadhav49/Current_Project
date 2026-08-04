@@ -3,19 +3,45 @@
   <div class="flex items-center justify-between mb-4">
     <h2 class="text-lg md:text-xl font-bold text-gray-800">Action Plan</h2>
     <div class="text-sm text-gray-500" *ngIf="searched && !loading">
-      Problems: <span class="font-semibold text-gray-700">{{ problems.length }}</span>
+      Problems: <span class="font-semibold text-gray-700">{{ displayedProblems.length }}</span>
     </div>
   </div>
 
   <!-- Filter bar -->
   <div class="bg-white rounded-lg shadow-md p-4 mb-4">
-    <div class="flex flex-col md:flex-row gap-3 md:items-end">
-      <div class="w-full md:w-72">
-        <label class="block text-sm font-medium text-gray-700 mb-1">Attribution <span class="text-red-500">*</span></label>
+    <div class="flex flex-col md:flex-row gap-3 md:items-end flex-wrap">
+      <div class="w-full md:w-56">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Model <span class="text-red-500">*</span></label>
+        <select name="model" [(ngModel)]="selectedModelId"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option [ngValue]="0">Select model…</option>
+          <option *ngFor="let m of models" [ngValue]="m.Model_ID">{{ m.Model_Name }}</option>
+        </select>
+      </div>
+      <div class="w-full md:w-52">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Attribution</label>
         <select name="attribution" [(ngModel)]="selectedAttributionId"
           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-          <option [ngValue]="0">Select attribution…</option>
+          <option [ngValue]="0">All</option>
           <option *ngFor="let a of attributions" [ngValue]="a.Attribution_ID">{{ a.Attribution_Name }}</option>
+        </select>
+      </div>
+      <div class="w-full md:w-36">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+        <select name="status" [(ngModel)]="selectedStatus"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="All">All</option>
+          <option value="R">R</option>
+          <option value="Y">Y</option>
+          <option value="G">G</option>
+        </select>
+      </div>
+      <div class="w-full md:w-40">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Severity</label>
+        <select name="severity" [(ngModel)]="selectedSeverityId"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option [ngValue]="-1">All</option>
+          <option *ngFor="let s of severities" [ngValue]="s.Severity_ID">{{ s.Severity_Code || s.Severity_Name }}</option>
         </select>
       </div>
       <div class="flex gap-2">
@@ -29,6 +55,37 @@
     </div>
   </div>
 
+  <!-- Status summary (horizontal) -->
+  <div *ngIf="searched && !loading && problems.length > 0" class="bg-white rounded-lg shadow-md p-3 mb-4 overflow-x-auto">
+    <table class="text-xs min-w-full">
+      <thead>
+        <tr class="text-gray-500">
+          <th class="text-left px-3 py-1.5 font-semibold"></th>
+          <th class="px-3 py-1.5"><span class="inline-block px-2 py-0.5 rounded-full font-semibold bg-red-100 text-red-700">R · Open</span></th>
+          <th class="px-3 py-1.5"><span class="inline-block px-2 py-0.5 rounded-full font-semibold bg-amber-100 text-amber-700">Y · Watch</span></th>
+          <th class="px-3 py-1.5"><span class="inline-block px-2 py-0.5 rounded-full font-semibold bg-emerald-100 text-emerald-700">G · Resolved</span></th>
+          <th class="px-3 py-1.5 text-gray-600 font-semibold">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="border-t">
+          <td class="px-3 py-1.5 text-left font-semibold text-gray-600">Problems</td>
+          <td class="px-3 py-1.5 text-center font-bold text-red-600">{{ statusCounts.R.problems }}</td>
+          <td class="px-3 py-1.5 text-center font-bold text-amber-600">{{ statusCounts.Y.problems }}</td>
+          <td class="px-3 py-1.5 text-center font-bold text-emerald-600">{{ statusCounts.G.problems }}</td>
+          <td class="px-3 py-1.5 text-center font-bold text-gray-700">{{ statusCounts.total.problems }}</td>
+        </tr>
+        <tr class="border-t">
+          <td class="px-3 py-1.5 text-left font-semibold text-gray-600">Concerns</td>
+          <td class="px-3 py-1.5 text-center text-red-600">{{ statusCounts.R.concerns }}</td>
+          <td class="px-3 py-1.5 text-center text-amber-600">{{ statusCounts.Y.concerns }}</td>
+          <td class="px-3 py-1.5 text-center text-emerald-600">{{ statusCounts.G.concerns }}</td>
+          <td class="px-3 py-1.5 text-center font-semibold text-gray-700">{{ statusCounts.total.concerns }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
   <!-- Results -->
   <div class="bg-white rounded-lg shadow-md p-4">
     <div *ngIf="loading" class="py-12 text-center text-gray-500">Loading…</div>
@@ -36,10 +93,13 @@
       Select an attribution, then click <span class="font-medium">Search</span>.
     </div>
     <div *ngIf="!loading && searched && problems.length === 0" class="py-12 text-center text-gray-500">
-      No problems (concerns) found for this attribution.
+      No problems (concerns) found for this model.
+    </div>
+    <div *ngIf="!loading && problems.length > 0 && displayedProblems.length === 0" class="py-12 text-center text-gray-500">
+      No problems match the selected filters.
     </div>
 
-    <div *ngIf="!loading && problems.length > 0" class="overflow-x-auto">
+    <div *ngIf="!loading && displayedProblems.length > 0" class="overflow-x-auto">
       <table class="min-w-full text-xs border-collapse">
         <thead>
           <tr class="bg-gray-100 text-gray-700">
@@ -55,7 +115,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let p of problems; let i = index" class="hover:bg-gray-50">
+          <tr *ngFor="let p of displayedProblems; let i = index" class="hover:bg-gray-50">
             <td class="px-2 py-1.5 border text-gray-500">{{ i + 1 }}</td>
             <td class="px-2 py-1.5 border">
               <span class="font-medium text-gray-800">{{ p.Part_Name }}</span>
@@ -74,117 +134,14 @@
             </td>
             <td class="px-2 py-1.5 border text-center">
               <button type="button" (click)="openPlan(p)"
-                class="px-3 py-1 text-[11px] font-medium rounded-md text-white"
-                [ngClass]="p.Is_Submitted ? 'bg-slate-600 hover:bg-slate-700' : 'bg-blue-600 hover:bg-blue-700'">
+                class="px-3 py-1 text-[11px] font-semibold rounded-md text-white shadow-sm"
+                [ngClass]="statusBtnClass(p.Status)">
                 {{ p.Is_Submitted ? 'View / Add' : 'Action Plan' }}
               </button>
             </td>
           </tr>
         </tbody>
       </table>
-    </div>
-  </div>
-</div>
-
-<!-- ── Action Plan modal ── -->
-<div *ngIf="showModal" class="fixed inset-0 z-50 flex items-start justify-center bg-black/40 p-4 overflow-y-auto">
-  <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl my-6">
-    <!-- Modal header -->
-    <div class="flex items-center justify-between px-5 py-3 border-b">
-      <div>
-        <h3 class="text-base font-bold text-gray-800">Action Plan</h3>
-        <div class="text-xs text-gray-500 mt-0.5" *ngIf="activeProblem">
-          {{ activeProblem.Part_Name }} — {{ activeProblem.Defect_Name }} ·
-          {{ activeProblem.Attribution_Name }} · Sev {{ activeProblem.Severity_Code || '—' }}
-          <span *ngIf="isExistingPlan" class="ml-2 inline-block px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-semibold">Submitted · add-only</span>
-        </div>
-      </div>
-      <button type="button" (click)="closeModal()" class="text-gray-400 hover:text-gray-700 text-xl leading-none">✕</button>
-    </div>
-
-    <div class="px-5 py-4 max-h-[70vh] overflow-y-auto">
-      <div *ngIf="loadingPlan" class="py-10 text-center text-gray-500">Loading plan…</div>
-
-      <ng-container *ngIf="!loadingPlan">
-        <!-- Root Cause -->
-        <section class="mb-5">
-          <div class="flex items-center justify-between mb-2">
-            <h4 class="text-sm font-semibold text-gray-700">Root Cause Analysis</h4>
-            <button type="button" (click)="addRoot()" class="text-xs px-2 py-1 rounded-md bg-blue-50 text-blue-700 hover:bg-blue-100">+ Add row</button>
-          </div>
-          <!-- Existing (locked) -->
-          <div *ngFor="let r of planDetail?.RootCauses" class="flex items-center gap-2 mb-2">
-            <input type="text" [value]="r.Root_Cause" disabled
-              class="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-md bg-gray-50 text-gray-600" />
-            <span class="text-[10px] text-gray-400 w-16">locked</span>
-          </div>
-          <!-- New draft rows -->
-          <div *ngFor="let r of draftRoots; let i = index" class="flex items-center gap-2 mb-2">
-            <input type="text" [(ngModel)]="r.Root_Cause" placeholder="Describe the root cause…"
-              class="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            <button type="button" (click)="removeRoot(i)" class="text-red-500 hover:text-red-700 text-sm w-16">🗑 delete</button>
-          </div>
-        </section>
-
-        <!-- ICA -->
-        <section class="mb-5">
-          <div class="flex items-center justify-between mb-2">
-            <h4 class="text-sm font-semibold text-gray-700">ICA — Interim Corrective Action</h4>
-            <button type="button" (click)="addIca()" class="text-xs px-2 py-1 rounded-md bg-blue-50 text-blue-700 hover:bg-blue-100">+ Add row</button>
-          </div>
-          <div *ngFor="let x of planDetail?.Icas" class="grid grid-cols-12 gap-2 mb-2">
-            <input type="text" [value]="x.Action" disabled class="col-span-6 px-3 py-2 text-sm border border-gray-200 rounded-md bg-gray-50 text-gray-600" placeholder="Action" />
-            <input type="text" [value]="x.Responsibility" disabled class="col-span-3 px-3 py-2 text-sm border border-gray-200 rounded-md bg-gray-50 text-gray-600" placeholder="Responsibility" />
-            <input type="text" [value]="fmtDate(x.ICA_Date)" disabled class="col-span-2 px-3 py-2 text-sm border border-gray-200 rounded-md bg-gray-50 text-gray-600" />
-            <span class="col-span-1 text-[10px] text-gray-400 self-center">locked</span>
-          </div>
-          <div *ngFor="let x of draftIcas; let i = index" class="grid grid-cols-12 gap-2 mb-2">
-            <input type="text" [(ngModel)]="x.Action" placeholder="Action" class="col-span-6 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            <input type="text" [(ngModel)]="x.Responsibility" placeholder="Responsibility" class="col-span-3 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            <input type="date" [(ngModel)]="x.ICA_Date" class="col-span-2 px-2 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            <button type="button" (click)="removeIca(i)" class="col-span-1 text-red-500 hover:text-red-700 text-sm">🗑</button>
-          </div>
-        </section>
-
-        <!-- PCA -->
-        <section class="mb-2">
-          <div class="flex items-center justify-between mb-2">
-            <h4 class="text-sm font-semibold text-gray-700">PCA — Permanent Corrective Action</h4>
-            <button type="button" (click)="addPca()" class="text-xs px-2 py-1 rounded-md bg-blue-50 text-blue-700 hover:bg-blue-100">+ Add row</button>
-          </div>
-          <div *ngFor="let x of planDetail?.Pcas" class="grid grid-cols-12 gap-2 mb-2">
-            <input type="text" [value]="x.Action" disabled class="col-span-5 px-3 py-2 text-sm border border-gray-200 rounded-md bg-gray-50 text-gray-600" placeholder="Action" />
-            <input type="text" [value]="x.Responsibility" disabled class="col-span-3 px-3 py-2 text-sm border border-gray-200 rounded-md bg-gray-50 text-gray-600" placeholder="Responsibility" />
-            <input type="text" [value]="fmtDate(x.Target_Date)" disabled class="col-span-2 px-3 py-2 text-sm border border-gray-200 rounded-md bg-gray-50 text-gray-600" />
-            <input type="text" [value]="x.Status" disabled class="col-span-1 px-2 py-2 text-sm border border-gray-200 rounded-md bg-gray-50 text-gray-600 text-center" />
-            <span class="col-span-1 text-[10px] text-gray-400 self-center">locked</span>
-          </div>
-          <div *ngFor="let x of draftPcas; let i = index" class="grid grid-cols-12 gap-2 mb-2">
-            <input type="text" [(ngModel)]="x.Action" placeholder="Action" class="col-span-5 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            <input type="text" [(ngModel)]="x.Responsibility" placeholder="Responsibility" class="col-span-3 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            <input type="date" [(ngModel)]="x.Target_Date" class="col-span-2 px-2 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            <select [(ngModel)]="x.Status" class="col-span-1 px-1 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="R">R</option>
-              <option value="Y">Y</option>
-              <option value="G">G</option>
-            </select>
-            <button type="button" (click)="removePca(i)" class="col-span-1 text-red-500 hover:text-red-700 text-sm">🗑</button>
-          </div>
-        </section>
-
-        <p *ngIf="!isExistingPlan" class="text-[11px] text-gray-400 italic mt-2">
-          Root Cause, ICA and PCA each need at least one entry. Rows can be deleted only before submitting.
-        </p>
-      </ng-container>
-    </div>
-
-    <!-- Modal footer -->
-    <div class="flex items-center justify-end gap-2 px-5 py-3 border-t">
-      <button type="button" (click)="closeModal()" class="px-4 py-2 text-sm font-medium rounded-md text-gray-700 bg-gray-200 hover:bg-gray-300">Cancel</button>
-      <button type="button" (click)="submit()" [disabled]="saving || loadingPlan"
-        class="px-4 py-2 text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300">
-        {{ saving ? 'Saving…' : (isExistingPlan ? 'Add to Plan' : 'Submit') }}
-      </button>
     </div>
   </div>
 </div>

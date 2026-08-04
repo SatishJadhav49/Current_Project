@@ -47,6 +47,13 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'action/edit',
+    loadComponent: () =>
+      import('./Features/ActionPlan/action-plan-edit.component').then(
+        (m) => m.ActionPlanEditComponent
+      ),
+  },
+  {
     path: 'action',
     loadComponent: () =>
       import('./Features/ActionPlan/action-plan.component').then(

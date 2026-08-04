@@ -3,6 +3,7 @@ import { Observable } from 'rxjs';
 import { ApiRequestService } from '../../services';
 
 export interface ActionPlanProblem {
+  Model_ID: number;
   Part_ID: number;
   Part_Name: string;
   Defect_ID: number;
@@ -50,6 +51,7 @@ export interface ActionPlanDetail {
 }
 
 export interface ActionPlanSubmit {
+  Model_ID: number;
   Part_ID: number;
   Defect_ID: number;
   Attribution_ID: number;
@@ -66,18 +68,19 @@ export interface ActionPlanSubmit {
 export class ActionPlanService {
   private readonly apiRequest = inject(ApiRequestService);
 
-  getProblems(attributionId: number): Observable<ActionPlanProblem[]> {
-    return this.apiRequest.get(`MM_Action_Plan/GetProblems/${attributionId}`);
+  getProblems(modelId: number): Observable<ActionPlanProblem[]> {
+    return this.apiRequest.get(`MM_Action_Plan/GetProblems/${modelId}`);
   }
 
   getPlan(
+    modelId: number,
     partId: number,
     defectId: number,
     attributionId: number,
     severityId: number,
   ): Observable<ActionPlanDetail> {
     return this.apiRequest.get(
-      `MM_Action_Plan/GetPlan/${partId}/${defectId}/${attributionId}/${severityId}`,
+      `MM_Action_Plan/GetPlan/${modelId}/${partId}/${defectId}/${attributionId}/${severityId}`,
     );
   }
 

@@ -20,17 +20,17 @@ namespace API_LSP.Controllers
             _service = service;
         }
 
-        /// <summary>Problem rows (Part+Defect) for an attribution, with tracking metrics.</summary>
-        [HttpGet("GetProblems/{attributionId}")]
-        public async Task<IActionResult> GetProblems(decimal attributionId)
+        /// <summary>Problem rows (Part+Defect) for a model, with tracking metrics.</summary>
+        [HttpGet("GetProblems/{modelId}")]
+        public async Task<IActionResult> GetProblems(decimal modelId)
         {
             try
             {
-                if (attributionId <= 0)
+                if (modelId <= 0)
                     return BadRequest(_responseHelper.CreateErrorResponse<List<ActionPlanProblemDto>>(
-                        "Validation Error", "Attribution is required."));
+                        "Validation Error", "Model is required."));
 
-                var result = await _service.GetProblems(attributionId);
+                var result = await _service.GetProblems(modelId);
                 return Ok(_responseHelper.CreateSuccessResponse(result, "Success", "Fetched problems."));
             }
             catch (Exception ex)
@@ -40,12 +40,12 @@ namespace API_LSP.Controllers
         }
 
         /// <summary>Existing plan detail for a problem, or an empty shell if none exists.</summary>
-        [HttpGet("GetPlan/{partId}/{defectId}/{attributionId}/{severityId}")]
-        public async Task<IActionResult> GetPlan(decimal partId, decimal defectId, decimal attributionId, decimal severityId)
+        [HttpGet("GetPlan/{modelId}/{partId}/{defectId}/{attributionId}/{severityId}")]
+        public async Task<IActionResult> GetPlan(decimal modelId, decimal partId, decimal defectId, decimal attributionId, decimal severityId)
         {
             try
             {
-                var result = await _service.GetPlanByProblem(partId, defectId, attributionId, severityId);
+                var result = await _service.GetPlanByProblem(modelId, partId, defectId, attributionId, severityId);
                 return Ok(_responseHelper.CreateSuccessResponse(result, "Success", "Fetched plan."));
             }
             catch (Exception ex)
@@ -60,9 +60,9 @@ namespace API_LSP.Controllers
         {
             try
             {
-                if (dto == null || dto.Part_ID <= 0 || dto.Defect_ID <= 0 || dto.Attribution_ID <= 0)
+                if (dto == null || dto.Model_ID <= 0 || dto.Part_ID <= 0 || dto.Defect_ID <= 0 || dto.Attribution_ID <= 0)
                     return BadRequest(_responseHelper.CreateErrorResponse<object>(
-                        "Validation Error", "Part, Defect and Attribution are required."));
+                        "Validation Error", "Model, Part, Defect and Attribution are required."));
 
                 var (ok, reason, planId) = await _service.SubmitPlan(dto);
                 if (!ok)

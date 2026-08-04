@@ -6,6 +6,7 @@ IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'MM_Action_Plan')
 BEGIN
     CREATE TABLE [dbo].[MM_Action_Plan](
         [Action_Plan_ID]   [numeric](18, 0) IDENTITY(1,1) NOT NULL,
+        [Model_ID]         [numeric](18, 0) NOT NULL,
         [Part_ID]          [numeric](18, 0) NOT NULL,
         [Defect_ID]        [numeric](18, 0) NOT NULL,
         [Attribution_ID]   [numeric](18, 0) NOT NULL,
@@ -16,8 +17,22 @@ BEGIN
         [Inserted_Date]    [datetime] NULL,
         [Plant_Code]       [varchar](15) NULL,
         CONSTRAINT [PK_MM_Action_Plan] PRIMARY KEY CLUSTERED ([Action_Plan_ID] ASC),
-        CONSTRAINT [UQ_MM_Action_Plan] UNIQUE ([Part_ID], [Defect_ID], [Attribution_ID], [Severity_ID])
+        CONSTRAINT [UQ_MM_Action_Plan] UNIQUE ([Model_ID], [Part_ID], [Defect_ID], [Attribution_ID], [Severity_ID])
     );
+END
+GO
+
+-- Migration: add Model_ID to an existing table + re-key the unique constraint.
+IF EXISTS (SELECT 1 FROM sys.tables WHERE name = 'MM_Action_Plan')
+   AND NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('MM_Action_Plan') AND name = 'Model_ID')
+BEGIN
+    ALTER TABLE [dbo].[MM_Action_Plan] ADD [Model_ID] [numeric](18, 0) NOT NULL CONSTRAINT [DF_MM_Action_Plan_Model_ID] DEFAULT ((0));
+
+    IF EXISTS (SELECT 1 FROM sys.objects WHERE name = 'UQ_MM_Action_Plan' AND type = 'UQ')
+        ALTER TABLE [dbo].[MM_Action_Plan] DROP CONSTRAINT [UQ_MM_Action_Plan];
+
+    ALTER TABLE [dbo].[MM_Action_Plan]
+        ADD CONSTRAINT [UQ_MM_Action_Plan] UNIQUE ([Model_ID], [Part_ID], [Defect_ID], [Attribution_ID], [Severity_ID]);
 END
 GO
 

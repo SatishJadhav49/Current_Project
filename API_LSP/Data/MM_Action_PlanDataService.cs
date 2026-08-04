@@ -27,20 +27,21 @@ namespace API_LSP.Data
             return "Y";
         }
 
-        private static string Key(decimal part, decimal defect, decimal severity)
-            => $"{part}|{defect}|{severity}";
+        private static string Key(decimal part, decimal defect, decimal attribution, decimal severity)
+            => $"{part}|{defect}|{attribution}|{severity}";
 
         /// <summary>
-        /// Problem rows for an attribution: distinct Part+Defect+Severity combos
-        /// from reported concerns, with frequency, cutoff (latest PCA target),
-        /// concerns-after-cutoff, and computed status.
+        /// Problem rows for a model: distinct Part+Defect+Attribution+Severity
+        /// combos from reported concerns, with frequency, cutoff (latest PCA
+        /// target), concerns-after-cutoff, and computed status. Attribution /
+        /// severity / status are filtered on the client.
         /// </summary>
-        public async Task<List<ActionPlanProblemDto>> GetProblems(decimal attributionId)
+        public async Task<List<ActionPlanProblemDto>> GetProblems(decimal modelId)
         {
             var problems = new List<ActionPlanProblemDto>();
             using var connection = await _connectionFactory.CreateConnectionAsync();
 
-            // A) Grouped problems + frequency.
+            // A) Grouped problems + frequency (scoped to the model's vehicles).
             const string problemsQuery = @"
                 SELECT d.Part_ID, p.Part_Name, d.Defect_ID, df.Defect_Name,
                        d.Attribution_ID, a.Attribution_Name,
@@ -48,23 +49,25 @@ namespace API_LSP.Data
                        ISNULL(s.Severity_Code, '') AS Severity_Code,
                        COUNT(*) AS Frequency
                 FROM MM_Vehicle_Defects d
+                INNER JOIN MM_Vehicle_Details v    ON v.Vehicle_ID = d.Vehicle_ID
                 INNER JOIN MM_Part_Master p        ON p.Part_ID = d.Part_ID
                 INNER JOIN MM_Defect_Master df     ON df.Defect_ID = d.Defect_ID
                 INNER JOIN MM_Attribution_Master a ON a.Attribution_ID = d.Attribution_ID
                 LEFT  JOIN MM_Severity_Master s    ON s.Severity_ID = d.Severity_ID
-                WHERE d.Attribution_ID = @Attr
+                WHERE v.Model_ID = @Model AND (v.Is_Deleted IS NULL OR v.Is_Deleted = 0)
                 GROUP BY d.Part_ID, p.Part_Name, d.Defect_ID, df.Defect_Name,
                          d.Attribution_ID, a.Attribution_Name, d.Severity_ID, s.Severity_Code
                 ORDER BY COUNT(*) DESC";
 
             using (var cmd = new SqlCommand(problemsQuery, connection))
             {
-                cmd.Parameters.AddWithValue("@Attr", attributionId);
+                cmd.Parameters.AddWithValue("@Model", modelId);
                 using var reader = await cmd.ExecuteReaderAsync();
                 while (await reader.ReadAsync())
                 {
                     problems.Add(new ActionPlanProblemDto
                     {
+                        Model_ID = modelId,
                         Part_ID = reader.GetDecimal(0),
                         Part_Name = reader.IsDBNull(1) ? "" : reader.GetString(1),
                         Defect_ID = reader.GetDecimal(2),
@@ -78,54 +81,54 @@ namespace API_LSP.Data
                 }
             }
 
-            // B) Existing plans for this attribution + their cutoff (max PCA target).
+            // B) Existing plans for this model + their cutoff (max PCA target).
             var plans = new Dictionary<string, (decimal Id, DateTime? Cutoff, bool Submitted)>();
             const string plansQuery = @"
-                SELECT ap.Action_Plan_ID, ap.Part_ID, ap.Defect_ID, ap.Severity_ID, ap.Is_Submitted,
+                SELECT ap.Action_Plan_ID, ap.Part_ID, ap.Defect_ID, ap.Attribution_ID, ap.Severity_ID, ap.Is_Submitted,
                        (SELECT MAX(Target_Date) FROM MM_Action_Plan_PCA WHERE Action_Plan_ID = ap.Action_Plan_ID) AS Cutoff
                 FROM MM_Action_Plan ap
-                WHERE ap.Attribution_ID = @Attr";
+                WHERE ap.Model_ID = @Model";
             using (var cmd = new SqlCommand(plansQuery, connection))
             {
-                cmd.Parameters.AddWithValue("@Attr", attributionId);
+                cmd.Parameters.AddWithValue("@Model", modelId);
                 using var reader = await cmd.ExecuteReaderAsync();
                 while (await reader.ReadAsync())
                 {
-                    var key = Key(reader.GetDecimal(1), reader.GetDecimal(2), reader.GetDecimal(3));
+                    var key = Key(reader.GetDecimal(1), reader.GetDecimal(2), reader.GetDecimal(3), reader.GetDecimal(4));
                     plans[key] = (
                         reader.GetDecimal(0),
-                        reader.IsDBNull(5) ? (DateTime?)null : reader.GetDateTime(5),
-                        !reader.IsDBNull(4) && reader.GetBoolean(4));
+                        reader.IsDBNull(6) ? (DateTime?)null : reader.GetDateTime(6),
+                        !reader.IsDBNull(5) && reader.GetBoolean(5));
                 }
             }
 
-            // C) Concerns after each plan's cutoff (recurrence).
+            // C) Concerns after each plan's cutoff (recurrence), model-scoped.
             var afterCutoff = new Dictionary<string, int>();
             const string afterQuery = @"
-                SELECT d.Part_ID, d.Defect_ID, ISNULL(d.Severity_ID, 0) AS Severity_ID, COUNT(*) AS Cnt
+                SELECT d.Part_ID, d.Defect_ID, d.Attribution_ID, ISNULL(d.Severity_ID, 0) AS Severity_ID, COUNT(*) AS Cnt
                 FROM MM_Vehicle_Defects d
+                INNER JOIN MM_Vehicle_Details v ON v.Vehicle_ID = d.Vehicle_ID
                 INNER JOIN MM_Action_Plan ap
-                    ON ap.Part_ID = d.Part_ID AND ap.Defect_ID = d.Defect_ID
-                   AND ap.Severity_ID = ISNULL(d.Severity_ID, 0)
-                   AND ap.Attribution_ID = d.Attribution_ID
+                    ON ap.Model_ID = v.Model_ID AND ap.Part_ID = d.Part_ID AND ap.Defect_ID = d.Defect_ID
+                   AND ap.Attribution_ID = d.Attribution_ID AND ap.Severity_ID = ISNULL(d.Severity_ID, 0)
                 CROSS APPLY (
                     SELECT MAX(Target_Date) AS Cutoff FROM MM_Action_Plan_PCA WHERE Action_Plan_ID = ap.Action_Plan_ID
                 ) c
-                WHERE d.Attribution_ID = @Attr AND c.Cutoff IS NOT NULL AND d.Inserted_Date > c.Cutoff
-                GROUP BY d.Part_ID, d.Defect_ID, ISNULL(d.Severity_ID, 0)";
+                WHERE v.Model_ID = @Model AND c.Cutoff IS NOT NULL AND d.Inserted_Date > c.Cutoff
+                GROUP BY d.Part_ID, d.Defect_ID, d.Attribution_ID, ISNULL(d.Severity_ID, 0)";
             using (var cmd = new SqlCommand(afterQuery, connection))
             {
-                cmd.Parameters.AddWithValue("@Attr", attributionId);
+                cmd.Parameters.AddWithValue("@Model", modelId);
                 using var reader = await cmd.ExecuteReaderAsync();
                 while (await reader.ReadAsync())
-                    afterCutoff[Key(reader.GetDecimal(0), reader.GetDecimal(1), reader.GetDecimal(2))] =
-                        Convert.ToInt32(reader.GetValue(3));
+                    afterCutoff[Key(reader.GetDecimal(0), reader.GetDecimal(1), reader.GetDecimal(2), reader.GetDecimal(3))] =
+                        Convert.ToInt32(reader.GetValue(4));
             }
 
             // Merge + compute status.
             foreach (var pr in problems)
             {
-                var key = Key(pr.Part_ID, pr.Defect_ID, pr.Severity_ID);
+                var key = Key(pr.Part_ID, pr.Defect_ID, pr.Attribution_ID, pr.Severity_ID);
                 int after = afterCutoff.TryGetValue(key, out var c) ? c : 0;
                 pr.Concerns_After_Cutoff = after;
 
@@ -144,10 +147,11 @@ namespace API_LSP.Data
 
         /// <summary>Full plan detail for a problem combo, or an empty shell if none exists.</summary>
         public async Task<ActionPlanDetailDto> GetPlanByProblem(
-            decimal partId, decimal defectId, decimal attributionId, decimal severityId)
+            decimal modelId, decimal partId, decimal defectId, decimal attributionId, decimal severityId)
         {
             var detail = new ActionPlanDetailDto
             {
+                Model_ID = modelId,
                 Part_ID = partId,
                 Defect_ID = defectId,
                 Attribution_ID = attributionId,
@@ -159,8 +163,9 @@ namespace API_LSP.Data
             decimal planId = 0;
             using (var cmd = new SqlCommand(@"
                 SELECT Action_Plan_ID, Is_Submitted FROM MM_Action_Plan
-                WHERE Part_ID = @P AND Defect_ID = @D AND Attribution_ID = @A AND Severity_ID = @S", connection))
+                WHERE Model_ID = @M AND Part_ID = @P AND Defect_ID = @D AND Attribution_ID = @A AND Severity_ID = @S", connection))
             {
+                cmd.Parameters.AddWithValue("@M", modelId);
                 cmd.Parameters.AddWithValue("@P", partId);
                 cmd.Parameters.AddWithValue("@D", defectId);
                 cmd.Parameters.AddWithValue("@A", attributionId);
@@ -244,8 +249,9 @@ namespace API_LSP.Data
             bool isNew;
             using (var cmd = new SqlCommand(@"
                 SELECT Action_Plan_ID FROM MM_Action_Plan
-                WHERE Part_ID = @P AND Defect_ID = @D AND Attribution_ID = @A AND Severity_ID = @S", connection))
+                WHERE Model_ID = @M AND Part_ID = @P AND Defect_ID = @D AND Attribution_ID = @A AND Severity_ID = @S", connection))
             {
+                cmd.Parameters.AddWithValue("@M", dto.Model_ID);
                 cmd.Parameters.AddWithValue("@P", dto.Part_ID);
                 cmd.Parameters.AddWithValue("@D", dto.Defect_ID);
                 cmd.Parameters.AddWithValue("@A", dto.Attribution_ID);
@@ -268,11 +274,12 @@ namespace API_LSP.Data
                 {
                     using var cmd = new SqlCommand(@"
                         INSERT INTO MM_Action_Plan
-                            (Part_ID, Defect_ID, Attribution_ID, Severity_ID, Is_Submitted,
+                            (Model_ID, Part_ID, Defect_ID, Attribution_ID, Severity_ID, Is_Submitted,
                              Inserted_Host, Inserted_User_ID, Inserted_Date, Plant_Code)
                         OUTPUT INSERTED.Action_Plan_ID
-                        VALUES (@P, @D, @A, @S, 1, @Host, @User, GETDATE(), @Plant)",
+                        VALUES (@M, @P, @D, @A, @S, 1, @Host, @User, GETDATE(), @Plant)",
                         connection, transaction);
+                    cmd.Parameters.AddWithValue("@M", dto.Model_ID);
                     cmd.Parameters.AddWithValue("@P", dto.Part_ID);
                     cmd.Parameters.AddWithValue("@D", dto.Defect_ID);
                     cmd.Parameters.AddWithValue("@A", dto.Attribution_ID);

@@ -3,6 +3,7 @@ namespace API_LSP.Models.DTOs
     /// <summary>One Problem row (Part+Defect) for an attribution + severity, with tracking metrics.</summary>
     public class ActionPlanProblemDto
     {
+        public decimal Model_ID { get; set; }
         public decimal Part_ID { get; set; }
         public string Part_Name { get; set; } = string.Empty;
         public decimal Defect_ID { get; set; }
@@ -49,6 +50,7 @@ namespace API_LSP.Models.DTOs
     public class ActionPlanDetailDto
     {
         public decimal Action_Plan_ID { get; set; }
+        public decimal Model_ID { get; set; }
         public decimal Part_ID { get; set; }
         public decimal Defect_ID { get; set; }
         public decimal Attribution_ID { get; set; }
@@ -63,6 +65,7 @@ namespace API_LSP.Models.DTOs
     /// on a later append the sent rows are simply added (existing rows stay).</summary>
     public class ActionPlanSubmitDto
     {
+        public decimal Model_ID { get; set; }
         public decimal Part_ID { get; set; }
         public decimal Defect_ID { get; set; }
         public decimal Attribution_ID { get; set; }
