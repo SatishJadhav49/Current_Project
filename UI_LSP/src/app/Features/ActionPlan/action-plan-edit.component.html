@@ -6,17 +6,14 @@
         class="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-200">
         ← Back
       </button>
-      <div class="min-w-0">
-        <h2 class="text-base md:text-lg font-bold text-gray-800 leading-tight">Action Plan</h2>
-        <div class="text-[11px] text-gray-500">Root Cause → ICA → PCA</div>
-      </div>
+      <h2 class="text-base md:text-lg font-bold text-gray-800">Action Plan</h2>
       <div class="ml-auto flex items-center gap-2">
         <span *ngIf="isExistingPlan"
-          class="hidden sm:inline-flex items-center px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 text-[11px] font-semibold border border-slate-200">
+          class="hidden sm:inline-flex items-center px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 text-[11px] font-semibold border border-gray-200">
           Submitted · add-only
         </span>
         <button type="button" (click)="submit()" [disabled]="saving || loadingPlan"
-          class="px-6 py-2 text-sm font-bold rounded-md text-white bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 shadow-sm">
+          class="px-6 py-2 text-sm font-bold rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 shadow-sm">
           {{ saving ? 'Saving…' : (isExistingPlan ? 'Add to Plan' : 'Submit') }}
         </button>
       </div>
@@ -24,215 +21,207 @@
   </div>
 
   <div class="max-w-6xl mx-auto px-4 md:px-6 mt-4 space-y-5">
-    <!-- Page banner -->
-    <div class="bg-black text-white text-center py-2.5 rounded-md font-bold text-base md:text-lg shadow">
-      Action Plan : LSP
-    </div>
-
     <!-- Problem context strip -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+    <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
       <div class="grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-gray-200">
         <div class="px-4 py-3">
           <div class="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">Model</div>
-          <div class="text-sm font-bold text-gray-800 mt-0.5">{{ modelName || '—' }}</div>
+          <div class="text-sm font-semibold text-gray-800 mt-0.5">{{ modelName || '—' }}</div>
         </div>
         <div class="px-4 py-3">
           <div class="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">Problem (Part — Defect)</div>
-          <div class="text-sm font-bold text-gray-800 mt-0.5">{{ partName }} <span class="text-gray-300 font-normal">—</span> {{ defectName }}</div>
+          <div class="text-sm font-semibold text-gray-800 mt-0.5">{{ partName }} <span class="text-gray-300 font-normal">—</span> {{ defectName }}</div>
         </div>
         <div class="px-4 py-3">
           <div class="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">Attribution</div>
-          <div class="text-sm font-bold text-gray-800 mt-0.5">{{ attributionName }}</div>
+          <div class="text-sm font-semibold text-gray-800 mt-0.5">{{ attributionName }}</div>
         </div>
         <div class="px-4 py-3">
           <div class="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">Severity</div>
-          <div class="text-sm font-bold text-gray-800 mt-0.5">{{ severityCode || '—' }}</div>
+          <div class="text-sm font-semibold text-gray-800 mt-0.5">{{ severityCode || '—' }}</div>
         </div>
       </div>
     </div>
 
-    <div *ngIf="loadingPlan" class="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center text-gray-500">
+    <div *ngIf="loadingPlan" class="bg-white rounded-lg border border-gray-200 p-12 text-center text-gray-500">
       Loading plan…
     </div>
 
     <ng-container *ngIf="!loadingPlan">
-      <!-- ═══ 1 · ROOT CAUSE ═══ -->
-      <section class="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
-        <div class="flex items-center gap-3 px-4 py-2.5 bg-slate-700">
-          <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-500 text-white text-xs font-bold">1</span>
-          <h3 class="text-sm font-bold text-white uppercase tracking-wide">Root Cause / Analysis Conclusion</h3>
+      <!-- ── Root Cause ── -->
+      <section class="bg-white rounded-lg border border-gray-200 p-5">
+        <div class="flex items-start gap-3 mb-4">
+          <span class="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-blue-50 text-blue-600 text-lg">🔍</span>
+          <div>
+            <h3 class="text-base font-bold text-gray-900">Root Cause / Analysis Conclusion</h3>
+            <p class="text-xs text-gray-500 mt-0.5">Underlying cause identified for this problem</p>
+          </div>
           <button type="button" (click)="addRoot()"
-            class="ml-auto inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-md text-white bg-white/10 hover:bg-white/25 border border-white/30">
+            class="ml-auto px-3 py-1.5 text-xs font-semibold rounded-md text-blue-600 bg-white border border-blue-200 hover:bg-blue-50">
             + Add Row
           </button>
         </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm border-collapse">
-            <thead>
-              <tr class="bg-gray-100 text-gray-600 text-[11px] uppercase tracking-wide">
-                <th class="border border-gray-200 px-3 py-2 text-left font-semibold">Details of Root Cause</th>
-                <th class="border border-gray-200 px-3 py-2 text-center font-semibold w-28">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              <!-- Existing (locked) -->
-              <tr *ngFor="let r of planDetail?.RootCauses" class="bg-gray-50/70">
-                <td class="border border-gray-200 px-3 py-2.5 text-gray-700">{{ r.Root_Cause }}</td>
-                <td class="border border-gray-200 px-3 py-2.5 text-center text-gray-400" title="Locked after submit">🔒</td>
-              </tr>
-              <!-- Draft rows -->
-              <tr *ngFor="let r of draftRoots; let i = index">
-                <td class="border border-gray-200 px-2 py-1.5">
-                  <input type="text" [(ngModel)]="r.Root_Cause" placeholder="Describe the root cause / analysis conclusion…"
-                    class="w-full px-3 py-2 text-sm rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                </td>
-                <td class="border border-gray-200 px-2 py-1.5">
-                  <div class="flex items-center justify-center gap-1.5">
-                    <button type="button" (click)="addRoot()" title="Add row"
-                      class="w-8 h-8 inline-flex items-center justify-center rounded text-white bg-emerald-500 hover:bg-emerald-600 text-lg font-bold leading-none shadow-sm">+</button>
-                    <button type="button" (click)="removeRoot(i)" title="Delete row"
-                      class="w-8 h-8 inline-flex items-center justify-center rounded text-red-600 bg-red-50 hover:bg-red-100 border border-red-200">🗑</button>
-                  </div>
-                </td>
-              </tr>
-              <tr *ngIf="draftRoots.length === 0 && (planDetail?.RootCauses?.length ?? 0) === 0">
-                <td colspan="2" class="border border-gray-200 px-3 py-5 text-center text-xs text-gray-400 italic">
-                  No entries yet — click “+ Add Row”.
-                </td>
-              </tr>
-            </tbody>
-          </table>
+
+        <!-- Existing (locked) -->
+        <div *ngFor="let r of planDetail?.RootCauses" class="mb-3">
+          <textarea rows="3" [value]="r.Root_Cause" disabled
+            class="w-full px-3 py-2.5 text-sm rounded-md border border-gray-300 bg-gray-50 text-gray-600 resize-none"></textarea>
         </div>
+        <!-- Draft rows -->
+        <div *ngFor="let r of draftRoots; let i = index" class="flex items-start gap-2 mb-3">
+          <textarea rows="3" [(ngModel)]="r.Root_Cause" placeholder="Describe the root cause / analysis conclusion…"
+            class="flex-1 px-3 py-2.5 text-sm rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+          <button type="button" (click)="removeRoot(i)" title="Delete row"
+            class="mt-1 w-8 h-8 inline-flex items-center justify-center rounded-md text-red-500 hover:bg-red-50">🗑</button>
+        </div>
+        <div *ngIf="draftRoots.length === 0 && (planDetail?.RootCauses?.length ?? 0) === 0"
+          class="text-xs text-gray-400 italic">No entries yet — click “+ Add Row”.</div>
       </section>
 
-      <!-- ═══ 2 · ICA ═══ -->
-      <section class="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
-        <div class="flex items-center gap-3 px-4 py-2.5 bg-slate-700">
-          <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-indigo-500 text-white text-xs font-bold">2</span>
-          <h3 class="text-sm font-bold text-white uppercase tracking-wide">ICA — Interim Corrective Action</h3>
+      <!-- ── ICA ── -->
+      <section class="bg-white rounded-lg border border-gray-200 p-5">
+        <div class="flex items-start gap-3 mb-4">
+          <span class="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-blue-50 text-blue-600 text-lg">⚡</span>
+          <div>
+            <h3 class="text-base font-bold text-gray-900">ICA — Interim Corrective Action</h3>
+            <p class="text-xs text-gray-500 mt-0.5">Immediate actions to contain the issue</p>
+          </div>
           <button type="button" (click)="addIca()"
-            class="ml-auto inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-md text-white bg-white/10 hover:bg-white/25 border border-white/30">
+            class="ml-auto px-3 py-1.5 text-xs font-semibold rounded-md text-blue-600 bg-white border border-blue-200 hover:bg-blue-50">
             + Add Row
           </button>
         </div>
-        <div class="overflow-x-auto">
+
+        <div class="overflow-x-auto rounded-md border border-gray-300">
           <table class="w-full text-sm border-collapse">
             <thead>
-              <tr class="bg-gray-100 text-gray-600 text-[11px] uppercase tracking-wide">
-                <th class="border border-gray-200 px-3 py-2 text-left font-semibold">Details of Action</th>
-                <th class="border border-gray-200 px-3 py-2 text-left font-semibold w-56">Responsibility</th>
-                <th class="border border-gray-200 px-3 py-2 text-left font-semibold w-44">Date</th>
-                <th class="border border-gray-200 px-3 py-2 text-center font-semibold w-28">Action</th>
+              <tr class="text-gray-800">
+                <th class="border-b border-r border-gray-300 px-3 py-2.5 text-center font-semibold">Details of Action</th>
+                <th class="border-b border-r border-gray-300 px-3 py-2.5 text-center font-semibold w-64">Responsibility</th>
+                <th class="border-b border-r border-gray-300 px-3 py-2.5 text-center font-semibold w-44">Date</th>
+                <th class="border-b border-gray-300 px-3 py-2.5 text-center font-semibold w-24">Action</th>
               </tr>
             </thead>
             <tbody>
               <!-- Existing (locked) -->
-              <tr *ngFor="let x of planDetail?.Icas" class="bg-gray-50/70">
-                <td class="border border-gray-200 px-3 py-2.5 text-gray-700">{{ x.Action }}</td>
-                <td class="border border-gray-200 px-3 py-2.5 text-gray-700">{{ x.Responsibility }}</td>
-                <td class="border border-gray-200 px-3 py-2.5 text-gray-700 whitespace-nowrap">{{ fmtDate(x.ICA_Date) || '—' }}</td>
-                <td class="border border-gray-200 px-3 py-2.5 text-center text-gray-400" title="Locked after submit">🔒</td>
+              <tr *ngFor="let x of planDetail?.Icas">
+                <td class="border-b border-r border-gray-200 px-2.5 py-2">
+                  <input type="text" [value]="x.Action" disabled class="w-full px-3 py-2 text-sm rounded-md border border-gray-200 bg-gray-50 text-gray-600" />
+                </td>
+                <td class="border-b border-r border-gray-200 px-2.5 py-2">
+                  <input type="text" [value]="x.Responsibility" disabled class="w-full px-3 py-2 text-sm rounded-md border border-gray-200 bg-gray-50 text-gray-600" />
+                </td>
+                <td class="border-b border-r border-gray-200 px-2.5 py-2">
+                  <input type="text" [value]="fmtDate(x.ICA_Date) || '—'" disabled class="w-full px-3 py-2 text-sm rounded-md border border-gray-200 bg-gray-50 text-gray-600 text-center" />
+                </td>
+                <td class="border-b border-gray-200 px-2.5 py-2 text-center text-gray-400">–</td>
               </tr>
               <!-- Draft rows -->
               <tr *ngFor="let x of draftIcas; let i = index">
-                <td class="border border-gray-200 px-2 py-1.5">
+                <td class="border-b border-r border-gray-200 px-2.5 py-2">
                   <input type="text" [(ngModel)]="x.Action" placeholder="Action taken…"
-                    class="w-full px-3 py-2 text-sm rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </td>
-                <td class="border border-gray-200 px-2 py-1.5">
+                <td class="border-b border-r border-gray-200 px-2.5 py-2">
                   <input type="text" [(ngModel)]="x.Responsibility" placeholder="Name / team"
-                    class="w-full px-3 py-2 text-sm rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </td>
-                <td class="border border-gray-200 px-2 py-1.5">
+                <td class="border-b border-r border-gray-200 px-2.5 py-2">
                   <input type="date" [(ngModel)]="x.ICA_Date"
-                    class="w-full px-2 py-2 text-sm rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    class="w-full px-2 py-2 text-sm rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </td>
-                <td class="border border-gray-200 px-2 py-1.5">
-                  <div class="flex items-center justify-center gap-1.5">
+                <td class="border-b border-gray-200 px-2.5 py-2">
+                  <div class="flex items-center justify-center gap-1">
                     <button type="button" (click)="addIca()" title="Add row"
-                      class="w-8 h-8 inline-flex items-center justify-center rounded text-white bg-emerald-500 hover:bg-emerald-600 text-lg font-bold leading-none shadow-sm">+</button>
+                      class="w-7 h-7 inline-flex items-center justify-center rounded-md text-emerald-600 hover:bg-emerald-50 text-lg font-bold leading-none">+</button>
                     <button type="button" (click)="removeIca(i)" title="Delete row"
-                      class="w-8 h-8 inline-flex items-center justify-center rounded text-red-600 bg-red-50 hover:bg-red-100 border border-red-200">🗑</button>
+                      class="w-7 h-7 inline-flex items-center justify-center rounded-md text-red-500 hover:bg-red-50">🗑</button>
                   </div>
                 </td>
               </tr>
               <tr *ngIf="draftIcas.length === 0 && (planDetail?.Icas?.length ?? 0) === 0">
-                <td colspan="4" class="border border-gray-200 px-3 py-5 text-center text-xs text-gray-400 italic">
-                  No entries yet — click “+ Add Row”.
-                </td>
+                <td colspan="4" class="px-3 py-5 text-center text-xs text-gray-400 italic">No entries yet — click “+ Add Row”.</td>
               </tr>
             </tbody>
           </table>
         </div>
       </section>
 
-      <!-- ═══ 3 · PCA ═══ -->
-      <section class="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
-        <div class="flex items-center gap-3 px-4 py-2.5 bg-slate-700">
-          <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-500 text-white text-xs font-bold">3</span>
-          <h3 class="text-sm font-bold text-white uppercase tracking-wide">PCA — Permanent Corrective Action</h3>
+      <!-- ── PCA ── -->
+      <section class="bg-white rounded-lg border border-gray-200 p-5">
+        <div class="flex items-start gap-3 mb-4">
+          <span class="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-blue-50 text-blue-600 text-lg">🛠️</span>
+          <div>
+            <h3 class="text-base font-bold text-gray-900">PCA — Permanent Corrective Action</h3>
+            <p class="text-xs text-gray-500 mt-0.5">Permanent actions to prevent recurrence</p>
+          </div>
           <button type="button" (click)="addPca()"
-            class="ml-auto inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-md text-white bg-white/10 hover:bg-white/25 border border-white/30">
+            class="ml-auto px-3 py-1.5 text-xs font-semibold rounded-md text-blue-600 bg-white border border-blue-200 hover:bg-blue-50">
             + Add Row
           </button>
         </div>
-        <div class="overflow-x-auto">
+
+        <div class="overflow-x-auto rounded-md border border-gray-300">
           <table class="w-full text-sm border-collapse">
             <thead>
-              <tr class="bg-gray-100 text-gray-600 text-[11px] uppercase tracking-wide">
-                <th class="border border-gray-200 px-3 py-2 text-left font-semibold">Details of Action</th>
-                <th class="border border-gray-200 px-3 py-2 text-left font-semibold w-52">Responsibility</th>
-                <th class="border border-gray-200 px-3 py-2 text-left font-semibold w-40">Target Date</th>
-                <th class="border border-gray-200 px-3 py-2 text-center font-semibold w-24">Status</th>
-                <th class="border border-gray-200 px-3 py-2 text-center font-semibold w-28">Action</th>
+              <tr class="text-gray-800">
+                <th class="border-b border-r border-gray-300 px-3 py-2.5 text-center font-semibold">Details of Action</th>
+                <th class="border-b border-r border-gray-300 px-3 py-2.5 text-center font-semibold w-60">Responsibility</th>
+                <th class="border-b border-r border-gray-300 px-3 py-2.5 text-center font-semibold w-40">Target Date</th>
+                <th class="border-b border-r border-gray-300 px-3 py-2.5 text-center font-semibold w-24">Status</th>
+                <th class="border-b border-gray-300 px-3 py-2.5 text-center font-semibold w-24">Action</th>
               </tr>
             </thead>
             <tbody>
               <!-- Existing (locked) -->
-              <tr *ngFor="let x of planDetail?.Pcas" class="bg-gray-50/70">
-                <td class="border border-gray-200 px-3 py-2.5 text-gray-700">{{ x.Action }}</td>
-                <td class="border border-gray-200 px-3 py-2.5 text-gray-700">{{ x.Responsibility }}</td>
-                <td class="border border-gray-200 px-3 py-2.5 text-gray-700 whitespace-nowrap">{{ fmtDate(x.Target_Date) || '—' }}</td>
-                <td class="border border-gray-200 px-3 py-2.5 text-center">
-                  <span class="inline-block w-7 py-0.5 rounded-full text-[11px] font-bold" [ngClass]="statusPill(x.Status)">{{ x.Status }}</span>
+              <tr *ngFor="let x of planDetail?.Pcas">
+                <td class="border-b border-r border-gray-200 px-2.5 py-2">
+                  <input type="text" [value]="x.Action" disabled class="w-full px-3 py-2 text-sm rounded-md border border-gray-200 bg-gray-50 text-gray-600" />
                 </td>
-                <td class="border border-gray-200 px-3 py-2.5 text-center text-gray-400" title="Locked after submit">🔒</td>
+                <td class="border-b border-r border-gray-200 px-2.5 py-2">
+                  <input type="text" [value]="x.Responsibility" disabled class="w-full px-3 py-2 text-sm rounded-md border border-gray-200 bg-gray-50 text-gray-600" />
+                </td>
+                <td class="border-b border-r border-gray-200 px-2.5 py-2">
+                  <input type="text" [value]="fmtDate(x.Target_Date) || '—'" disabled class="w-full px-3 py-2 text-sm rounded-md border border-gray-200 bg-gray-50 text-gray-600 text-center" />
+                </td>
+                <td class="border-b border-r border-gray-200 px-2.5 py-2">
+                  <input type="text" [value]="x.Status" disabled class="w-full px-2 py-2 text-sm rounded-md border border-gray-200 bg-gray-50 text-gray-600 text-center" />
+                </td>
+                <td class="border-b border-gray-200 px-2.5 py-2 text-center text-gray-400">–</td>
               </tr>
               <!-- Draft rows -->
               <tr *ngFor="let x of draftPcas; let i = index">
-                <td class="border border-gray-200 px-2 py-1.5">
+                <td class="border-b border-r border-gray-200 px-2.5 py-2">
                   <input type="text" [(ngModel)]="x.Action" placeholder="Permanent action…"
-                    class="w-full px-3 py-2 text-sm rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </td>
-                <td class="border border-gray-200 px-2 py-1.5">
+                <td class="border-b border-r border-gray-200 px-2.5 py-2">
                   <input type="text" [(ngModel)]="x.Responsibility" placeholder="Name / team"
-                    class="w-full px-3 py-2 text-sm rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </td>
-                <td class="border border-gray-200 px-2 py-1.5">
+                <td class="border-b border-r border-gray-200 px-2.5 py-2">
                   <input type="date" [(ngModel)]="x.Target_Date"
-                    class="w-full px-2 py-2 text-sm rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    class="w-full px-2 py-2 text-sm rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </td>
-                <td class="border border-gray-200 px-2 py-1.5">
+                <td class="border-b border-r border-gray-200 px-2.5 py-2">
                   <select [(ngModel)]="x.Status"
-                    class="w-full px-1 py-2 text-sm rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center">
+                    class="w-full px-1 py-2 text-sm rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center">
                     <option value="R">R</option>
                     <option value="Y">Y</option>
                     <option value="G">G</option>
                   </select>
                 </td>
-                <td class="border border-gray-200 px-2 py-1.5">
-                  <div class="flex items-center justify-center gap-1.5">
+                <td class="border-b border-gray-200 px-2.5 py-2">
+                  <div class="flex items-center justify-center gap-1">
                     <button type="button" (click)="addPca()" title="Add row"
-                      class="w-8 h-8 inline-flex items-center justify-center rounded text-white bg-emerald-500 hover:bg-emerald-600 text-lg font-bold leading-none shadow-sm">+</button>
+                      class="w-7 h-7 inline-flex items-center justify-center rounded-md text-emerald-600 hover:bg-emerald-50 text-lg font-bold leading-none">+</button>
                     <button type="button" (click)="removePca(i)" title="Delete row"
-                      class="w-8 h-8 inline-flex items-center justify-center rounded text-red-600 bg-red-50 hover:bg-red-100 border border-red-200">🗑</button>
+                      class="w-7 h-7 inline-flex items-center justify-center rounded-md text-red-500 hover:bg-red-50">🗑</button>
                   </div>
                 </td>
               </tr>
               <tr *ngIf="draftPcas.length === 0 && (planDetail?.Pcas?.length ?? 0) === 0">
-                <td colspan="5" class="border border-gray-200 px-3 py-5 text-center text-xs text-gray-400 italic">
-                  No entries yet — click “+ Add Row”.
-                </td>
+                <td colspan="5" class="px-3 py-5 text-center text-xs text-gray-400 italic">No entries yet — click “+ Add Row”.</td>
               </tr>
             </tbody>
           </table>
