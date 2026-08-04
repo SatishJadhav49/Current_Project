@@ -47,6 +47,13 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'action',
+    loadComponent: () =>
+      import('./Features/ActionPlan/action-plan.component').then(
+        (m) => m.ActionPlanComponent
+      ),
+  },
+  {
     path: 'documents',
     loadChildren: () =>
       import('./Features/Documents/documents.routes').then((m) => m.DocumentsRoutes),

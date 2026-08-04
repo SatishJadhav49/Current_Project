@@ -46,6 +46,7 @@ builder.Services.AddScoped<MM_ShowerTestDataService>();
 builder.Services.AddScoped<MM_Area_ImageDataService>();
 builder.Services.AddScoped<MM_ReportsDataService>();
 builder.Services.AddScoped<MM_Defect_Stage_MappingDataService>();
+builder.Services.AddScoped<MM_Action_PlanDataService>();
 
 
 
