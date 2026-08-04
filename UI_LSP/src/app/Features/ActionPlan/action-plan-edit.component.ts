@@ -7,7 +7,7 @@ import { ActionPlanDetail, ActionPlanService } from './action-plan.service';
 
 interface DraftRoot { Root_Cause: string; }
 interface DraftIca { Action: string; Responsibility: string; ICA_Date: string | null; }
-interface DraftPca { Action: string; Responsibility: string; Target_Date: string | null; Status: string; }
+interface DraftPca { Action: string; Responsibility: string; Target_Date: string | null; }
 
 @Component({
   selector: 'app-action-plan-edit',
@@ -65,7 +65,7 @@ export class ActionPlanEditComponent implements OnInit {
         const existing = this.isExistingPlan;
         this.draftRoots = existing ? [] : [{ Root_Cause: '' }];
         this.draftIcas = existing ? [] : [{ Action: '', Responsibility: '', ICA_Date: null }];
-        this.draftPcas = existing ? [] : [{ Action: '', Responsibility: '', Target_Date: null, Status: 'R' }];
+        this.draftPcas = existing ? [] : [{ Action: '', Responsibility: '', Target_Date: null }];
         this.loadingPlan = false;
       },
       error: () => (this.loadingPlan = false),
@@ -101,7 +101,25 @@ export class ActionPlanEditComponent implements OnInit {
   removeRoot(i: number): void { this.draftRoots.splice(i, 1); }
   addIca(): void { this.draftIcas.push({ Action: '', Responsibility: '', ICA_Date: null }); }
   removeIca(i: number): void { this.draftIcas.splice(i, 1); }
-  addPca(): void { this.draftPcas.push({ Action: '', Responsibility: '', Target_Date: null, Status: 'R' }); }
+  addPca(): void { this.draftPcas.push({ Action: '', Responsibility: '', Target_Date: null }); }
+
+  /**
+   * Auto status per PCA row from its target date (no manual selection):
+   * R until the target date passes, Y after it, G after target + 30 days.
+   * A SQL job will later maintain the stored value with the full concern
+   * recurrence check; this keeps the display consistent until then.
+   */
+  computePcaStatus(dateStr: string | null): string {
+    if (!dateStr) return 'R';
+    const t = new Date(dateStr);
+    if (isNaN(t.getTime())) return 'R';
+    const target = new Date(t.getFullYear(), t.getMonth(), t.getDate(), 23, 59, 59);
+    const now = new Date();
+    if (now <= target) return 'R';
+    const green = new Date(target);
+    green.setDate(green.getDate() + 30);
+    return now > green ? 'G' : 'Y';
+  }
   removePca(i: number): void { this.draftPcas.splice(i, 1); }
 
   goBack(): void {
@@ -133,7 +151,7 @@ export class ActionPlanEditComponent implements OnInit {
         Severity_ID: this.severityId,
         RootCauses: roots.map((r) => ({ Root_Cause: r.Root_Cause.trim() })),
         Icas: icas.map((i) => ({ Action: i.Action.trim(), Responsibility: i.Responsibility.trim(), ICA_Date: i.ICA_Date || null })),
-        Pcas: pcas.map((p) => ({ Action: p.Action.trim(), Responsibility: p.Responsibility.trim(), Target_Date: p.Target_Date || null, Status: p.Status || 'R' })),
+        Pcas: pcas.map((p) => ({ Action: p.Action.trim(), Responsibility: p.Responsibility.trim(), Target_Date: p.Target_Date || null, Status: this.computePcaStatus(p.Target_Date) })),
         Inserted_Host: localStorage.getItem('Hostname') ?? '',
         Inserted_User_ID: Number(localStorage.getItem('Employee_ID')) || undefined,
         Plant_Code: localStorage.getItem('Plant_Code') ?? '',

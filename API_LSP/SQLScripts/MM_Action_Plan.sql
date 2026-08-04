@@ -85,3 +85,15 @@ BEGIN
     CREATE INDEX [IX_MM_AP_PCA_Plan] ON [dbo].[MM_Action_Plan_PCA]([Action_Plan_ID]);
 END
 GO
+
+-- Supporting index for the Action Plan aggregations over reported concerns
+-- (frequency + recurrence group-bys on MM_Vehicle_Defects).
+IF NOT EXISTS (SELECT 1 FROM sys.indexes
+               WHERE name = 'IX_MM_Vehicle_Defects_Problem'
+                 AND object_id = OBJECT_ID('MM_Vehicle_Defects'))
+BEGIN
+    CREATE INDEX [IX_MM_Vehicle_Defects_Problem]
+        ON [dbo].[MM_Vehicle_Defects]([Part_ID], [Defect_ID], [Attribution_ID], [Severity_ID])
+        INCLUDE ([Vehicle_ID], [Inserted_Date]);
+END
+GO

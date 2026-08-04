@@ -41,8 +41,9 @@ namespace API_LSP.Data
             var problems = new List<ActionPlanProblemDto>();
             using var connection = await _connectionFactory.CreateConnectionAsync();
 
-            // A) Grouped problems + frequency (scoped to the model's vehicles).
-            const string problemsQuery = @"
+            // One round trip, three result sets: (A) grouped problems + frequency,
+            // (B) existing plans + cutoff, (C) concerns after each plan's cutoff.
+            const string query = @"
                 SELECT d.Part_ID, p.Part_Name, d.Defect_ID, df.Defect_Name,
                        d.Attribution_ID, a.Attribution_Name,
                        ISNULL(d.Severity_ID, 0) AS Severity_ID,
@@ -57,12 +58,33 @@ namespace API_LSP.Data
                 WHERE v.Model_ID = @Model AND (v.Is_Deleted IS NULL OR v.Is_Deleted = 0)
                 GROUP BY d.Part_ID, p.Part_Name, d.Defect_ID, df.Defect_Name,
                          d.Attribution_ID, a.Attribution_Name, d.Severity_ID, s.Severity_Code
-                ORDER BY COUNT(*) DESC";
+                ORDER BY COUNT(*) DESC;
 
-            using (var cmd = new SqlCommand(problemsQuery, connection))
+                SELECT ap.Action_Plan_ID, ap.Part_ID, ap.Defect_ID, ap.Attribution_ID, ap.Severity_ID, ap.Is_Submitted,
+                       (SELECT MAX(Target_Date) FROM MM_Action_Plan_PCA WHERE Action_Plan_ID = ap.Action_Plan_ID) AS Cutoff
+                FROM MM_Action_Plan ap
+                WHERE ap.Model_ID = @Model;
+
+                SELECT d.Part_ID, d.Defect_ID, d.Attribution_ID, ISNULL(d.Severity_ID, 0) AS Severity_ID, COUNT(*) AS Cnt
+                FROM MM_Vehicle_Defects d
+                INNER JOIN MM_Vehicle_Details v ON v.Vehicle_ID = d.Vehicle_ID
+                INNER JOIN MM_Action_Plan ap
+                    ON ap.Model_ID = v.Model_ID AND ap.Part_ID = d.Part_ID AND ap.Defect_ID = d.Defect_ID
+                   AND ap.Attribution_ID = d.Attribution_ID AND ap.Severity_ID = ISNULL(d.Severity_ID, 0)
+                CROSS APPLY (
+                    SELECT MAX(Target_Date) AS Cutoff FROM MM_Action_Plan_PCA WHERE Action_Plan_ID = ap.Action_Plan_ID
+                ) c
+                WHERE v.Model_ID = @Model AND c.Cutoff IS NOT NULL AND d.Inserted_Date > c.Cutoff
+                GROUP BY d.Part_ID, d.Defect_ID, d.Attribution_ID, ISNULL(d.Severity_ID, 0);";
+
+            var plans = new Dictionary<string, (decimal Id, DateTime? Cutoff, bool Submitted)>();
+            var afterCutoff = new Dictionary<string, int>();
+
+            using (var cmd = new SqlCommand(query, connection))
             {
                 cmd.Parameters.AddWithValue("@Model", modelId);
                 using var reader = await cmd.ExecuteReaderAsync();
+
                 while (await reader.ReadAsync())
                 {
                     problems.Add(new ActionPlanProblemDto
@@ -79,19 +101,8 @@ namespace API_LSP.Data
                         Frequency = Convert.ToInt32(reader.GetValue(8)),
                     });
                 }
-            }
 
-            // B) Existing plans for this model + their cutoff (max PCA target).
-            var plans = new Dictionary<string, (decimal Id, DateTime? Cutoff, bool Submitted)>();
-            const string plansQuery = @"
-                SELECT ap.Action_Plan_ID, ap.Part_ID, ap.Defect_ID, ap.Attribution_ID, ap.Severity_ID, ap.Is_Submitted,
-                       (SELECT MAX(Target_Date) FROM MM_Action_Plan_PCA WHERE Action_Plan_ID = ap.Action_Plan_ID) AS Cutoff
-                FROM MM_Action_Plan ap
-                WHERE ap.Model_ID = @Model";
-            using (var cmd = new SqlCommand(plansQuery, connection))
-            {
-                cmd.Parameters.AddWithValue("@Model", modelId);
-                using var reader = await cmd.ExecuteReaderAsync();
+                await reader.NextResultAsync();
                 while (await reader.ReadAsync())
                 {
                     var key = Key(reader.GetDecimal(1), reader.GetDecimal(2), reader.GetDecimal(3), reader.GetDecimal(4));
@@ -100,26 +111,8 @@ namespace API_LSP.Data
                         reader.IsDBNull(6) ? (DateTime?)null : reader.GetDateTime(6),
                         !reader.IsDBNull(5) && reader.GetBoolean(5));
                 }
-            }
 
-            // C) Concerns after each plan's cutoff (recurrence), model-scoped.
-            var afterCutoff = new Dictionary<string, int>();
-            const string afterQuery = @"
-                SELECT d.Part_ID, d.Defect_ID, d.Attribution_ID, ISNULL(d.Severity_ID, 0) AS Severity_ID, COUNT(*) AS Cnt
-                FROM MM_Vehicle_Defects d
-                INNER JOIN MM_Vehicle_Details v ON v.Vehicle_ID = d.Vehicle_ID
-                INNER JOIN MM_Action_Plan ap
-                    ON ap.Model_ID = v.Model_ID AND ap.Part_ID = d.Part_ID AND ap.Defect_ID = d.Defect_ID
-                   AND ap.Attribution_ID = d.Attribution_ID AND ap.Severity_ID = ISNULL(d.Severity_ID, 0)
-                CROSS APPLY (
-                    SELECT MAX(Target_Date) AS Cutoff FROM MM_Action_Plan_PCA WHERE Action_Plan_ID = ap.Action_Plan_ID
-                ) c
-                WHERE v.Model_ID = @Model AND c.Cutoff IS NOT NULL AND d.Inserted_Date > c.Cutoff
-                GROUP BY d.Part_ID, d.Defect_ID, d.Attribution_ID, ISNULL(d.Severity_ID, 0)";
-            using (var cmd = new SqlCommand(afterQuery, connection))
-            {
-                cmd.Parameters.AddWithValue("@Model", modelId);
-                using var reader = await cmd.ExecuteReaderAsync();
+                await reader.NextResultAsync();
                 while (await reader.ReadAsync())
                     afterCutoff[Key(reader.GetDecimal(0), reader.GetDecimal(1), reader.GetDecimal(2), reader.GetDecimal(3))] =
                         Convert.ToInt32(reader.GetValue(4));
@@ -160,70 +153,60 @@ namespace API_LSP.Data
 
             using var connection = await _connectionFactory.CreateConnectionAsync();
 
-            decimal planId = 0;
-            using (var cmd = new SqlCommand(@"
-                SELECT Action_Plan_ID, Is_Submitted FROM MM_Action_Plan
-                WHERE Model_ID = @M AND Part_ID = @P AND Defect_ID = @D AND Attribution_ID = @A AND Severity_ID = @S", connection))
+            // One round trip, four result sets: header, root causes, ICAs, PCAs.
+            const string query = @"
+                DECLARE @Id numeric(18,0) = (
+                    SELECT Action_Plan_ID FROM MM_Action_Plan
+                    WHERE Model_ID = @M AND Part_ID = @P AND Defect_ID = @D
+                      AND Attribution_ID = @A AND Severity_ID = @S);
+
+                SELECT Action_Plan_ID, Is_Submitted FROM MM_Action_Plan WHERE Action_Plan_ID = @Id;
+                SELECT Root_Cause_ID, ISNULL(Root_Cause,'') FROM MM_Action_Plan_Root_Cause WHERE Action_Plan_ID = @Id ORDER BY Root_Cause_ID;
+                SELECT ICA_ID, ISNULL(Action,''), ISNULL(Responsibility,''), ICA_Date FROM MM_Action_Plan_ICA WHERE Action_Plan_ID = @Id ORDER BY ICA_ID;
+                SELECT PCA_ID, ISNULL(Action,''), ISNULL(Responsibility,''), Target_Date, ISNULL(Status,'R') FROM MM_Action_Plan_PCA WHERE Action_Plan_ID = @Id ORDER BY PCA_ID;";
+
+            using var cmd = new SqlCommand(query, connection);
+            cmd.Parameters.AddWithValue("@M", modelId);
+            cmd.Parameters.AddWithValue("@P", partId);
+            cmd.Parameters.AddWithValue("@D", defectId);
+            cmd.Parameters.AddWithValue("@A", attributionId);
+            cmd.Parameters.AddWithValue("@S", severityId);
+
+            using var reader = await cmd.ExecuteReaderAsync();
+            if (await reader.ReadAsync())
             {
-                cmd.Parameters.AddWithValue("@M", modelId);
-                cmd.Parameters.AddWithValue("@P", partId);
-                cmd.Parameters.AddWithValue("@D", defectId);
-                cmd.Parameters.AddWithValue("@A", attributionId);
-                cmd.Parameters.AddWithValue("@S", severityId);
-                using var reader = await cmd.ExecuteReaderAsync();
-                if (await reader.ReadAsync())
+                detail.Action_Plan_ID = reader.GetDecimal(0);
+                detail.Is_Submitted = !reader.IsDBNull(1) && reader.GetBoolean(1);
+            }
+
+            await reader.NextResultAsync();
+            while (await reader.ReadAsync())
+                detail.RootCauses.Add(new ActionPlanRootCauseDto
                 {
-                    planId = reader.GetDecimal(0);
-                    detail.Is_Submitted = !reader.IsDBNull(1) && reader.GetBoolean(1);
-                }
-            }
+                    Root_Cause_ID = reader.GetDecimal(0),
+                    Root_Cause = reader.GetString(1),
+                });
 
-            if (planId == 0) return detail; // no plan yet
-            detail.Action_Plan_ID = planId;
+            await reader.NextResultAsync();
+            while (await reader.ReadAsync())
+                detail.Icas.Add(new ActionPlanIcaDto
+                {
+                    ICA_ID = reader.GetDecimal(0),
+                    Action = reader.GetString(1),
+                    Responsibility = reader.GetString(2),
+                    ICA_Date = reader.IsDBNull(3) ? (DateTime?)null : reader.GetDateTime(3),
+                });
 
-            using (var cmd = new SqlCommand(
-                "SELECT Root_Cause_ID, ISNULL(Root_Cause,'') FROM MM_Action_Plan_Root_Cause WHERE Action_Plan_ID = @Id ORDER BY Root_Cause_ID", connection))
-            {
-                cmd.Parameters.AddWithValue("@Id", planId);
-                using var reader = await cmd.ExecuteReaderAsync();
-                while (await reader.ReadAsync())
-                    detail.RootCauses.Add(new ActionPlanRootCauseDto
-                    {
-                        Root_Cause_ID = reader.GetDecimal(0),
-                        Root_Cause = reader.GetString(1),
-                    });
-            }
-
-            using (var cmd = new SqlCommand(
-                "SELECT ICA_ID, ISNULL(Action,''), ISNULL(Responsibility,''), ICA_Date FROM MM_Action_Plan_ICA WHERE Action_Plan_ID = @Id ORDER BY ICA_ID", connection))
-            {
-                cmd.Parameters.AddWithValue("@Id", planId);
-                using var reader = await cmd.ExecuteReaderAsync();
-                while (await reader.ReadAsync())
-                    detail.Icas.Add(new ActionPlanIcaDto
-                    {
-                        ICA_ID = reader.GetDecimal(0),
-                        Action = reader.GetString(1),
-                        Responsibility = reader.GetString(2),
-                        ICA_Date = reader.IsDBNull(3) ? (DateTime?)null : reader.GetDateTime(3),
-                    });
-            }
-
-            using (var cmd = new SqlCommand(
-                "SELECT PCA_ID, ISNULL(Action,''), ISNULL(Responsibility,''), Target_Date, ISNULL(Status,'R') FROM MM_Action_Plan_PCA WHERE Action_Plan_ID = @Id ORDER BY PCA_ID", connection))
-            {
-                cmd.Parameters.AddWithValue("@Id", planId);
-                using var reader = await cmd.ExecuteReaderAsync();
-                while (await reader.ReadAsync())
-                    detail.Pcas.Add(new ActionPlanPcaDto
-                    {
-                        PCA_ID = reader.GetDecimal(0),
-                        Action = reader.GetString(1),
-                        Responsibility = reader.GetString(2),
-                        Target_Date = reader.IsDBNull(3) ? (DateTime?)null : reader.GetDateTime(3),
-                        Status = reader.GetString(4),
-                    });
-            }
+            await reader.NextResultAsync();
+            while (await reader.ReadAsync())
+                detail.Pcas.Add(new ActionPlanPcaDto
+                {
+                    PCA_ID = reader.GetDecimal(0),
+                    Action = reader.GetString(1),
+                    Responsibility = reader.GetString(2),
+                    Target_Date = reader.IsDBNull(3) ? (DateTime?)null : reader.GetDateTime(3),
+                    Status = reader.GetString(4),
+                });
 
             return detail;
         }
