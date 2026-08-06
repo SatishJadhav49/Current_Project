@@ -44,6 +44,14 @@ export interface ActionPlanPca {
   Added_By: string;
   Added_On: string | null;
 }
+/** One occurrence of a problem — vehicle, when/where logged, other defects. */
+export interface ProblemHistoryRow {
+  VIN_No: string;
+  Audit_Date: string | null;
+  Audit_Area_Name: string;
+  Other_Defects: string;
+}
+
 export interface ActionPlanDetail {
   Action_Plan_ID: number;
   Part_ID: number;
@@ -87,6 +95,18 @@ export class ActionPlanService {
   ): Observable<ActionPlanDetail> {
     return this.apiRequest.get(
       `MM_Action_Plan/GetPlan/${modelId}/${partId}/${defectId}/${attributionId}/${severityId}`,
+    );
+  }
+
+  getProblemHistory(
+    modelId: number,
+    partId: number,
+    defectId: number,
+    attributionId: number,
+    severityId: number,
+  ): Observable<ProblemHistoryRow[]> {
+    return this.apiRequest.get(
+      `MM_Action_Plan/GetProblemHistory/${modelId}/${partId}/${defectId}/${attributionId}/${severityId}`,
     );
   }
 

@@ -39,6 +39,22 @@ namespace API_LSP.Controllers
             }
         }
 
+        /// <summary>Every occurrence of a problem with vehicle + other-defect history.</summary>
+        [HttpGet("GetProblemHistory/{modelId}/{partId}/{defectId}/{attributionId}/{severityId}")]
+        public async Task<IActionResult> GetProblemHistory(
+            decimal modelId, decimal partId, decimal defectId, decimal attributionId, decimal severityId)
+        {
+            try
+            {
+                var result = await _service.GetProblemHistory(modelId, partId, defectId, attributionId, severityId);
+                return Ok(_responseHelper.CreateSuccessResponse(result, "Success", "Fetched problem history."));
+            }
+            catch (Exception ex)
+            {
+                return await HandleExceptionAsync(ex, "GetProblemHistory");
+            }
+        }
+
         /// <summary>Existing plan detail for a problem, or an empty shell if none exists.</summary>
         [HttpGet("GetPlan/{modelId}/{partId}/{defectId}/{attributionId}/{severityId}")]
         public async Task<IActionResult> GetPlan(decimal modelId, decimal partId, decimal defectId, decimal attributionId, decimal severityId)

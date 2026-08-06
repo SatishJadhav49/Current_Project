@@ -3,7 +3,11 @@ import { Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ToastService } from '../../services';
-import { ActionPlanDetail, ActionPlanService } from './action-plan.service';
+import {
+  ActionPlanDetail,
+  ActionPlanService,
+  ProblemHistoryRow,
+} from './action-plan.service';
 
 interface DraftRoot { Root_Cause: string; }
 interface DraftIca { Action: string; Responsibility: string; ICA_Date: string | null; }
@@ -40,6 +44,33 @@ export class ActionPlanEditComponent implements OnInit {
   draftRoots: DraftRoot[] = [];
   draftIcas: DraftIca[] = [];
   draftPcas: DraftPca[] = [];
+
+  // ── Problem history modal ──
+  showHistory = false;
+  loadingHistory = false;
+  private historyLoaded = false;
+  historyRows: ProblemHistoryRow[] = [];
+
+  /** Open the history modal; rows are fetched once and cached for the visit. */
+  openHistory(): void {
+    this.showHistory = true;
+    if (this.historyLoaded) return;
+    this.loadingHistory = true;
+    this.service
+      .getProblemHistory(this.modelId, this.partId, this.defectId, this.attributionId, this.severityId)
+      .subscribe({
+        next: (rows) => {
+          this.historyRows = rows ?? [];
+          this.historyLoaded = true;
+          this.loadingHistory = false;
+        },
+        error: () => (this.loadingHistory = false),
+      });
+  }
+
+  closeHistory(): void {
+    this.showHistory = false;
+  }
 
   ngOnInit(): void {
     const q = this.route.snapshot.queryParamMap;

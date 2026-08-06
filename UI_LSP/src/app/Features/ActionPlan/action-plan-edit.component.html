@@ -10,9 +10,16 @@
         ← Back
       </button>
       <h2 class="text-base md:text-lg font-bold text-gray-800">Action Plan</h2>
+      <button
+        type="button"
+        (click)="openHistory()"
+        class="ml-auto inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-md text-blue-600 bg-white border border-blue-200 hover:bg-blue-50"
+      >
+        🕘 Problem History
+      </button>
       <span
         *ngIf="isExistingPlan"
-        class="ml-auto hidden sm:inline-flex items-center px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 text-[11px] font-semibold border border-gray-200"
+        class="hidden sm:inline-flex items-center px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 text-[11px] font-semibold border border-gray-200"
       >
         Submitted · add-only
       </span>
@@ -543,5 +550,84 @@
         </div>
       </div>
     </ng-container>
+  </div>
+
+  <!-- ── Problem History modal ── -->
+  <div
+    *ngIf="showHistory"
+    class="fixed inset-0 z-50 flex items-start justify-center bg-black/40 p-4 overflow-y-auto"
+    (click)="closeHistory()"
+  >
+    <div
+      class="bg-white rounded-lg shadow-xl w-full max-w-4xl my-8"
+      (click)="$event.stopPropagation()"
+    >
+      <!-- Modal header -->
+      <div class="flex items-center justify-between px-5 py-3 border-b">
+        <div>
+          <h3 class="text-base font-bold text-gray-800">🕘 Problem History</h3>
+          <div class="text-xs text-gray-500 mt-0.5">
+            {{ partName }} <span class="text-gray-300">—</span> {{ defectName }}
+            · {{ attributionName }} · Sev {{ severityCode || "—" }}
+            <span class="ml-1 text-gray-400">({{ historyRows.length }} occurrence{{ historyRows.length === 1 ? "" : "s" }})</span>
+          </div>
+        </div>
+        <button
+          type="button"
+          (click)="closeHistory()"
+          class="text-gray-400 hover:text-gray-700 text-xl leading-none"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div class="px-5 py-4 max-h-[70vh] overflow-y-auto">
+        <div *ngIf="loadingHistory" class="py-10 text-center text-gray-500">
+          Loading history…
+        </div>
+        <div
+          *ngIf="!loadingHistory && historyRows.length === 0"
+          class="py-10 text-center text-gray-400"
+        >
+          No occurrences found for this problem.
+        </div>
+
+        <div
+          *ngIf="!loadingHistory && historyRows.length > 0"
+          class="overflow-x-auto rounded-md border border-gray-300"
+        >
+          <table class="w-full text-sm border-collapse">
+            <thead>
+              <tr class="bg-gray-50 text-gray-800">
+                <th class="border-b border-r border-gray-300 px-3 py-2 text-center font-semibold w-10">#</th>
+                <th class="border-b border-r border-gray-300 px-3 py-2 text-left font-semibold whitespace-nowrap">VIN No</th>
+                <th class="border-b border-r border-gray-300 px-3 py-2 text-left font-semibold whitespace-nowrap w-44">Audit Date</th>
+                <th class="border-b border-r border-gray-300 px-3 py-2 text-left font-semibold whitespace-nowrap w-36">Audit Area</th>
+                <th class="border-b border-gray-300 px-3 py-2 text-left font-semibold">Other Defects</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let h of historyRows; let i = index" class="even:bg-gray-50/60">
+                <td class="border-b border-r border-gray-200 px-3 py-2 text-center text-gray-500">{{ i + 1 }}</td>
+                <td class="border-b border-r border-gray-200 px-3 py-2 font-medium text-gray-800 whitespace-nowrap">{{ h.VIN_No }}</td>
+                <td class="border-b border-r border-gray-200 px-3 py-2 text-gray-700 whitespace-nowrap">{{ fmtDateTime(h.Audit_Date) || "—" }}</td>
+                <td class="border-b border-r border-gray-200 px-3 py-2 text-gray-700 whitespace-nowrap">{{ h.Audit_Area_Name || "—" }}</td>
+                <td class="border-b border-gray-200 px-3 py-2 text-gray-600 text-xs">{{ h.Other_Defects || "—" }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end px-5 py-3 border-t">
+        <button
+          type="button"
+          (click)="closeHistory()"
+          class="px-5 py-2 text-sm font-medium rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-200"
+        >
+          Close
+        </button>
+      </div>
+    </div>
   </div>
 </div>
