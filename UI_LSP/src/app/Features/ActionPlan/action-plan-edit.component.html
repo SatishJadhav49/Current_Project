@@ -559,7 +559,7 @@
     (click)="closeHistory()"
   >
     <div
-      class="bg-white rounded-lg shadow-xl w-full max-w-4xl my-8"
+      class="bg-white rounded-lg shadow-xl w-full max-w-7xl my-8"
       (click)="$event.stopPropagation()"
     >
       <!-- Modal header -->
@@ -594,25 +594,41 @@
 
         <div
           *ngIf="!loadingHistory && historyRows.length > 0"
-          class="overflow-x-auto rounded-md border border-gray-300"
+          class="overflow-x-auto bg-white border border-gray-200 rounded-md"
         >
-          <table class="w-full text-sm border-collapse">
-            <thead>
-              <tr class="bg-gray-50 text-gray-800">
-                <th class="border-b border-r border-gray-300 px-3 py-2 text-center font-semibold w-10">#</th>
-                <th class="border-b border-r border-gray-300 px-3 py-2 text-left font-semibold whitespace-nowrap">VIN No</th>
-                <th class="border-b border-r border-gray-300 px-3 py-2 text-left font-semibold whitespace-nowrap w-44">Audit Date</th>
-                <th class="border-b border-r border-gray-300 px-3 py-2 text-left font-semibold whitespace-nowrap w-36">Audit Area</th>
-                <th class="border-b border-gray-300 px-3 py-2 text-left font-semibold">Other Defects</th>
+          <table class="min-w-full text-sm">
+            <thead class="bg-gray-50 text-gray-700">
+              <tr>
+                <th class="px-3 py-2 text-left font-semibold w-10">#</th>
+                <th class="px-3 py-2 text-left font-semibold whitespace-nowrap">VIN</th>
+                <th class="px-3 py-2 text-left font-semibold whitespace-nowrap">Audit Date</th>
+                <th class="px-3 py-2 text-left font-semibold">Stage</th>
+                <th class="px-3 py-2 text-left font-semibold">Area</th>
+                <th class="px-3 py-2 text-left font-semibold">Part</th>
+                <th class="px-3 py-2 text-left font-semibold">Defect</th>
+                <th class="px-3 py-2 text-left font-semibold">Location</th>
+                <th class="px-3 py-2 text-left font-semibold">Severity</th>
+                <th class="px-3 py-2 text-left font-semibold">Attribution</th>
+                <th class="px-3 py-2 text-left font-semibold">Defect Type</th>
+                <th class="px-3 py-2 text-left font-semibold">Remark</th>
               </tr>
             </thead>
-            <tbody>
-              <tr *ngFor="let h of historyRows; let i = index" class="even:bg-gray-50/60">
-                <td class="border-b border-r border-gray-200 px-3 py-2 text-center text-gray-500">{{ i + 1 }}</td>
-                <td class="border-b border-r border-gray-200 px-3 py-2 font-medium text-gray-800 whitespace-nowrap">{{ h.VIN_No }}</td>
-                <td class="border-b border-r border-gray-200 px-3 py-2 text-gray-700 whitespace-nowrap">{{ fmtDateTime(h.Audit_Date) || "—" }}</td>
-                <td class="border-b border-r border-gray-200 px-3 py-2 text-gray-700 whitespace-nowrap">{{ h.Audit_Area_Name || "—" }}</td>
-                <td class="border-b border-gray-200 px-3 py-2 text-gray-600 text-xs">{{ h.Other_Defects || "—" }}</td>
+            <tbody class="divide-y divide-gray-100">
+              <tr *ngFor="let h of historyRows; let i = index" class="hover:bg-gray-50">
+                <td class="px-3 py-2 text-gray-500 font-medium">{{ i + 1 }}</td>
+                <td class="px-3 py-2 text-gray-800 font-mono font-semibold whitespace-nowrap">{{ h.VIN_No }}</td>
+                <td class="px-3 py-2 text-gray-700 whitespace-nowrap">{{ fmtDateTime(h.Audit_Date) || "—" }}</td>
+                <td class="px-3 py-2 text-gray-700 font-medium whitespace-nowrap">{{ h.Audit_Area_Name || "—" }}</td>
+                <td class="px-3 py-2 text-gray-700">{{ h.Vehicle_Area_Name || "—" }}</td>
+                <td class="px-3 py-2 text-gray-800 font-medium">{{ h.Part_Name }}</td>
+                <td class="px-3 py-2 text-gray-700">{{ h.Defect_Name }}</td>
+                <td class="px-3 py-2 text-gray-700">{{ h.Location_Name || "—" }}</td>
+                <td class="px-3 py-2">
+                  <span class="font-mono font-semibold text-gray-700">{{ h.Severity_Code || "—" }}</span>
+                </td>
+                <td class="px-3 py-2 text-gray-700">{{ h.Attribution_Name || "—" }}</td>
+                <td class="px-3 py-2 text-gray-700">{{ h.Defect_Type_Name || "—" }}</td>
+                <td class="px-3 py-2 text-gray-600 italic max-w-xs truncate" [title]="h.Remark || ''">{{ h.Remark || "—" }}</td>
               </tr>
             </tbody>
           </table>

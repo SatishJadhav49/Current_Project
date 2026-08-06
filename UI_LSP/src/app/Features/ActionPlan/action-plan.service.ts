@@ -44,12 +44,20 @@ export interface ActionPlanPca {
   Added_By: string;
   Added_On: string | null;
 }
-/** One occurrence of a problem — vehicle, when/where logged, other defects. */
+/** One occurrence of a problem — the vehicle plus that concern's full detail. */
 export interface ProblemHistoryRow {
   VIN_No: string;
   Audit_Date: string | null;
   Audit_Area_Name: string;
-  Other_Defects: string;
+  Vehicle_Area_Name: string;
+  Part_Name: string;
+  Defect_Name: string;
+  Location_Name: string;
+  Severity_Code: string;
+  Attribution_Name: string;
+  Defect_Type_Name: string;
+  Remark: string;
+  Rework_Status: string;
 }
 
 export interface ActionPlanDetail {

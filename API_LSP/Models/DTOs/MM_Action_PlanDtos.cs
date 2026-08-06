@@ -52,14 +52,24 @@ namespace API_LSP.Models.DTOs
         public DateTime? Added_On { get; set; }
     }
 
-    /// <summary>One occurrence of a problem: the vehicle it was reported on,
-    /// when/where it was logged, and that vehicle's other defects.</summary>
+    /// <summary>
+    /// One occurrence of a problem — the vehicle it was found on plus that
+    /// concern's full detail. Row count equals the problem's Frequency.
+    /// </summary>
     public class ProblemHistoryRowDto
     {
         public string VIN_No { get; set; } = string.Empty;
         public DateTime? Audit_Date { get; set; }
         public string Audit_Area_Name { get; set; } = string.Empty;
-        public string Other_Defects { get; set; } = string.Empty;
+        public string Vehicle_Area_Name { get; set; } = string.Empty;
+        public string Part_Name { get; set; } = string.Empty;
+        public string Defect_Name { get; set; } = string.Empty;
+        public string Location_Name { get; set; } = string.Empty;
+        public string Severity_Code { get; set; } = string.Empty;
+        public string Attribution_Name { get; set; } = string.Empty;
+        public string Defect_Type_Name { get; set; } = string.Empty;
+        public string Remark { get; set; } = string.Empty;
+        public string Rework_Status { get; set; } = "Pending";
     }
 
     /// <summary>Full plan detail (existing rows are locked on the client once submitted).</summary>

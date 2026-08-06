@@ -140,44 +140,44 @@ namespace API_LSP.Data
 
         /// <summary>Full plan detail for a problem combo, or an empty shell if none exists.</summary>
         /// <summary>
-        /// Problem history: every occurrence of the problem (one row per concern,
-        /// matching the frequency count) with its vehicle, audit date/area, and
-        /// the vehicle's OTHER defects composed as a single display string.
+        /// Frequency breakdown for one problem: one row per occurrence (so the
+        /// row count equals the Frequency), listing the vehicle it was found on
+        /// plus that concern's full detail.
         /// </summary>
         public async Task<List<ProblemHistoryRowDto>> GetProblemHistory(
             decimal modelId, decimal partId, decimal defectId, decimal attributionId, decimal severityId)
         {
             var rows = new List<ProblemHistoryRowDto>();
-            var occurrences = new List<(decimal VehicleId, ProblemHistoryRowDto Row)>();
-            var othersByVehicle = new Dictionary<decimal, List<string>>();
-
             using var connection = await _connectionFactory.CreateConnectionAsync();
 
-            // One round trip, two result sets: occurrences + other defects of those vehicles.
             const string query = @"
-                SELECT d.Vehicle_ID, v.VIN_No, d.Inserted_Date, ISNULL(aa.Audit_Area_Name, '') AS Audit_Area_Name
+                SELECT v.VIN_No,
+                       d.Inserted_Date,
+                       ISNULL(aa.Audit_Area_Name, '') AS Audit_Area_Name,
+                       ISNULL(va.Vehicle_Area_Name, '') AS Vehicle_Area_Name,
+                       p.Part_Name,
+                       df.Defect_Name,
+                       ISNULL(l.Location_Name, '')     AS Location_Name,
+                       ISNULL(s.Severity_Code, '')     AS Severity_Code,
+                       ISNULL(a.Attribution_Name, '')  AS Attribution_Name,
+                       ISNULL(dt.Defect_Type_Name, '') AS Defect_Type_Name,
+                       ISNULL(d.Remark, '')            AS Remark,
+                       CASE WHEN r.Rework_Done = 1 THEN 1 ELSE 0 END AS Rework_Done
                 FROM MM_Vehicle_Defects d
-                INNER JOIN MM_Vehicle_Details v ON v.Vehicle_ID = d.Vehicle_ID
-                LEFT  JOIN MM_Audit_Area_Master aa ON aa.Audit_Area_ID = d.Audit_Area_ID
+                INNER JOIN MM_Vehicle_Details v      ON v.Vehicle_ID = d.Vehicle_ID
+                INNER JOIN MM_Part_Master p          ON p.Part_ID = d.Part_ID
+                INNER JOIN MM_Defect_Master df       ON df.Defect_ID = d.Defect_ID
+                LEFT  JOIN MM_Location_Master l      ON l.Location_ID = d.Location_ID
+                LEFT  JOIN MM_Audit_Area_Master aa   ON aa.Audit_Area_ID = d.Audit_Area_ID
+                LEFT  JOIN MM_Vehicle_Area_Master va ON va.Vehicle_Area_ID = d.Vehicle_Area_ID
+                LEFT  JOIN MM_Severity_Master s      ON s.Severity_ID = d.Severity_ID
+                LEFT  JOIN MM_Attribution_Master a   ON a.Attribution_ID = d.Attribution_ID
+                LEFT  JOIN MM_Defect_Type_Master dt  ON dt.Defect_Type_ID = d.Defect_Type_ID
+                LEFT  JOIN MM_Vehicle_Defect_Rework r ON r.Defect_Entry_ID = d.Defect_Entry_ID
                 WHERE v.Model_ID = @M AND (v.Is_Deleted IS NULL OR v.Is_Deleted = 0)
                   AND d.Part_ID = @P AND d.Defect_ID = @D
                   AND d.Attribution_ID = @A AND ISNULL(d.Severity_ID, 0) = @S
-                ORDER BY d.Inserted_Date DESC, d.Defect_Entry_ID DESC;
-
-                SELECT d2.Vehicle_ID, p.Part_Name, df.Defect_Name, ISNULL(aa.Audit_Area_Name, '') AS Audit_Area_Name
-                FROM MM_Vehicle_Defects d2
-                INNER JOIN MM_Vehicle_Details v ON v.Vehicle_ID = d2.Vehicle_ID
-                INNER JOIN MM_Part_Master p     ON p.Part_ID = d2.Part_ID
-                INNER JOIN MM_Defect_Master df  ON df.Defect_ID = d2.Defect_ID
-                LEFT  JOIN MM_Audit_Area_Master aa ON aa.Audit_Area_ID = d2.Audit_Area_ID
-                WHERE v.Model_ID = @M AND (v.Is_Deleted IS NULL OR v.Is_Deleted = 0)
-                  AND EXISTS (SELECT 1 FROM MM_Vehicle_Defects dx
-                              WHERE dx.Vehicle_ID = d2.Vehicle_ID
-                                AND dx.Part_ID = @P AND dx.Defect_ID = @D
-                                AND dx.Attribution_ID = @A AND ISNULL(dx.Severity_ID, 0) = @S)
-                  AND NOT (d2.Part_ID = @P AND d2.Defect_ID = @D
-                           AND d2.Attribution_ID = @A AND ISNULL(d2.Severity_ID, 0) = @S)
-                ORDER BY d2.Vehicle_ID, d2.Defect_Entry_ID;";
+                ORDER BY d.Inserted_Date DESC, d.Defect_Entry_ID DESC";
 
             using var cmd = new SqlCommand(query, connection);
             cmd.Parameters.AddWithValue("@M", modelId);
@@ -189,30 +189,21 @@ namespace API_LSP.Data
             using var reader = await cmd.ExecuteReaderAsync();
             while (await reader.ReadAsync())
             {
-                occurrences.Add((reader.GetDecimal(0), new ProblemHistoryRowDto
+                rows.Add(new ProblemHistoryRowDto
                 {
-                    VIN_No = reader.IsDBNull(1) ? "" : reader.GetString(1),
-                    Audit_Date = reader.IsDBNull(2) ? (DateTime?)null : reader.GetDateTime(2),
-                    Audit_Area_Name = reader.GetString(3),
-                }));
-            }
-
-            await reader.NextResultAsync();
-            while (await reader.ReadAsync())
-            {
-                var vid = reader.GetDecimal(0);
-                var text = $"{reader.GetString(1)} — {reader.GetString(2)} ({reader.GetString(3)})";
-                if (!othersByVehicle.TryGetValue(vid, out var list))
-                    othersByVehicle[vid] = list = new List<string>();
-                list.Add(text);
-            }
-
-            foreach (var (vehicleId, row) in occurrences)
-            {
-                row.Other_Defects = othersByVehicle.TryGetValue(vehicleId, out var others)
-                    ? string.Join(", ", others)
-                    : "";
-                rows.Add(row);
+                    VIN_No = reader.IsDBNull(0) ? "" : reader.GetString(0),
+                    Audit_Date = reader.IsDBNull(1) ? (DateTime?)null : reader.GetDateTime(1),
+                    Audit_Area_Name = reader.GetString(2),
+                    Vehicle_Area_Name = reader.GetString(3),
+                    Part_Name = reader.IsDBNull(4) ? "" : reader.GetString(4),
+                    Defect_Name = reader.IsDBNull(5) ? "" : reader.GetString(5),
+                    Location_Name = reader.GetString(6),
+                    Severity_Code = reader.GetString(7),
+                    Attribution_Name = reader.GetString(8),
+                    Defect_Type_Name = reader.GetString(9),
+                    Remark = reader.GetString(10),
+                    Rework_Status = Convert.ToInt32(reader.GetValue(11)) == 1 ? "Done" : "Pending",
+                });
             }
 
             return rows;
