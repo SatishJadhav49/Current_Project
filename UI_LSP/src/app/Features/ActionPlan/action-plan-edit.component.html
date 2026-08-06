@@ -2,13 +2,18 @@
   <!-- Sticky action bar -->
   <div class="sticky top-0 z-20 bg-white border-b shadow-sm">
     <div class="px-4 md:px-6 py-3 flex items-center gap-3">
-      <button type="button" (click)="goBack()"
-        class="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-200">
+      <button
+        type="button"
+        (click)="goBack()"
+        class="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-200"
+      >
         ← Back
       </button>
       <h2 class="text-base md:text-lg font-bold text-gray-800">Action Plan</h2>
-      <span *ngIf="isExistingPlan"
-        class="ml-auto hidden sm:inline-flex items-center px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 text-[11px] font-semibold border border-gray-200">
+      <span
+        *ngIf="isExistingPlan"
+        class="ml-auto hidden sm:inline-flex items-center px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 text-[11px] font-semibold border border-gray-200"
+      >
         Submitted · add-only
       </span>
     </div>
@@ -17,27 +22,57 @@
   <div class="px-4 md:px-6 mt-4 space-y-5">
     <!-- Problem context strip -->
     <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
-      <div class="grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-gray-200">
+      <div
+        class="grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-gray-200"
+      >
         <div class="px-4 py-3">
-          <div class="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">Model</div>
-          <div class="text-sm font-semibold text-gray-800 mt-0.5">{{ modelName || '—' }}</div>
+          <div
+            class="text-[10px] uppercase tracking-wider text-gray-400 font-semibold"
+          >
+            Model
+          </div>
+          <div class="text-sm font-semibold text-gray-800 mt-0.5">
+            {{ modelName || "—" }}
+          </div>
         </div>
         <div class="px-4 py-3">
-          <div class="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">Problem (Part — Defect)</div>
-          <div class="text-sm font-semibold text-gray-800 mt-0.5">{{ partName }} <span class="text-gray-300 font-normal">—</span> {{ defectName }}</div>
+          <div
+            class="text-[10px] uppercase tracking-wider text-gray-400 font-semibold"
+          >
+            Problem (Part — Defect)
+          </div>
+          <div class="text-sm font-semibold text-gray-800 mt-0.5">
+            {{ partName }} <span class="text-gray-300 font-normal">—</span>
+            {{ defectName }}
+          </div>
         </div>
         <div class="px-4 py-3">
-          <div class="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">Attribution</div>
-          <div class="text-sm font-semibold text-gray-800 mt-0.5">{{ attributionName }}</div>
+          <div
+            class="text-[10px] uppercase tracking-wider text-gray-400 font-semibold"
+          >
+            Attribution
+          </div>
+          <div class="text-sm font-semibold text-gray-800 mt-0.5">
+            {{ attributionName }}
+          </div>
         </div>
         <div class="px-4 py-3">
-          <div class="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">Severity</div>
-          <div class="text-sm font-semibold text-gray-800 mt-0.5">{{ severityCode || '—' }}</div>
+          <div
+            class="text-[10px] uppercase tracking-wider text-gray-400 font-semibold"
+          >
+            Severity
+          </div>
+          <div class="text-sm font-semibold text-gray-800 mt-0.5">
+            {{ severityCode || "—" }}
+          </div>
         </div>
       </div>
     </div>
 
-    <div *ngIf="loadingPlan" class="bg-white rounded-lg border border-gray-200 p-12 text-center text-gray-500">
+    <div
+      *ngIf="loadingPlan"
+      class="bg-white rounded-lg border border-gray-200 p-12 text-center text-gray-500"
+    >
       Loading plan…
     </div>
 
@@ -45,43 +80,103 @@
       <!-- ── Root Cause ── -->
       <section class="bg-white rounded-lg border border-gray-200 p-5">
         <div class="flex items-start gap-3 mb-4">
-          <span class="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-blue-50 text-blue-600 text-lg">🔍</span>
+          <span
+            class="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-blue-50 text-blue-600 text-lg"
+            >🔍</span
+          >
           <div>
-            <h3 class="text-base font-bold text-gray-900">Root Cause / Analysis Conclusion</h3>
-            <p class="text-xs text-gray-500 mt-0.5">Underlying cause identified for this problem</p>
+            <h3 class="text-base font-bold text-gray-900">
+              Root Cause / Analysis Conclusion
+            </h3>
+            <p class="text-xs text-gray-500 mt-0.5">
+              Underlying cause identified for this problem
+            </p>
           </div>
-          <button type="button" (click)="addRoot()"
-            class="ml-auto px-3 py-1.5 text-xs font-semibold rounded-md text-blue-600 bg-white border border-blue-200 hover:bg-blue-50">
+          <button
+            type="button"
+            (click)="addRoot()"
+            class="ml-auto px-3 py-1.5 text-xs font-semibold rounded-md text-blue-600 bg-white border border-blue-200 hover:bg-blue-50"
+          >
             + Add Row
           </button>
         </div>
 
         <!-- Existing (locked) -->
         <div *ngFor="let r of planDetail?.RootCauses" class="mb-3">
-          <textarea rows="3" [value]="r.Root_Cause" disabled
-            class="w-full px-3 py-2.5 text-sm rounded-md border border-gray-300 bg-gray-50 text-gray-600 resize-none"></textarea>
+          <textarea
+            rows="3"
+            [value]="r.Root_Cause"
+            disabled
+            class="w-full px-3 py-2.5 text-sm rounded-md border border-gray-300 bg-gray-50 text-gray-600 resize-none"
+          ></textarea>
+          <div class="text-[10px] text-gray-400 text-right leading-tight -mt-1">
+            {{ r.Added_By }} · {{ fmtDateTime(r.Added_On) }}
+          </div>
         </div>
         <!-- Draft rows -->
-        <div *ngFor="let r of draftRoots; let i = index" class="flex items-start gap-2 mb-3">
-          <textarea rows="3" [(ngModel)]="r.Root_Cause" placeholder="Describe the root cause / analysis conclusion…"
-            class="flex-1 px-3 py-2.5 text-sm rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
-          <button type="button" (click)="removeRoot(i)" title="Delete row"
-            class="mt-1 w-8 h-8 inline-flex items-center justify-center rounded-md text-red-500 hover:bg-red-50">🗑</button>
+        <div
+          *ngFor="let r of draftRoots; let i = index"
+          class="flex items-start gap-2 mb-3"
+        >
+          <textarea
+            rows="3"
+            [(ngModel)]="r.Root_Cause"
+            placeholder="Describe the root cause / analysis conclusion…"
+            class="flex-1 px-3 py-2.5 text-sm rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+          ></textarea>
+          <button
+            type="button"
+            (click)="removeRoot(i)"
+            title="Delete row"
+            class="mt-1 w-8 h-8 inline-flex items-center justify-center rounded-md text-red-500 hover:bg-red-50"
+          >
+            <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
+                  </svg>
+          </button>
         </div>
-        <div *ngIf="draftRoots.length === 0 && (planDetail?.RootCauses?.length ?? 0) === 0"
-          class="text-xs text-gray-400 italic">No entries yet — click “+ Add Row”.</div>
+        <div
+          *ngIf="
+            draftRoots.length === 0 &&
+            (planDetail?.RootCauses?.length ?? 0) === 0
+          "
+          class="text-xs text-gray-400 italic"
+        >
+          No entries yet — click “+ Add Row”.
+        </div>
       </section>
 
       <!-- ── ICA ── -->
       <section class="bg-blue-50 rounded-lg border border-blue-200 p-5">
         <div class="flex items-start gap-3 mb-4">
-          <span class="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-blue-100 text-blue-600 text-lg">⚡</span>
+          <span
+            class="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-blue-100 text-blue-600 text-lg"
+            >⚡</span
+          >
           <div>
-            <h3 class="text-base font-bold text-gray-900">ICA — Interim Corrective Action</h3>
-            <p class="text-xs text-gray-500 mt-0.5">Immediate actions to contain the issue</p>
+            <h3 class="text-base font-bold text-gray-900">
+              ICA — Immediate Corrective Action
+            </h3>
+            <p class="text-xs text-gray-500 mt-0.5">
+              Immediate actions to contain the issue
+            </p>
           </div>
-          <button type="button" (click)="addIca()"
-            class="ml-auto px-3 py-1.5 text-xs font-semibold rounded-md text-blue-600 bg-white border border-blue-200 hover:bg-blue-100">
+          <button
+            type="button"
+            (click)="addIca()"
+            class="ml-auto px-3 py-1.5 text-xs font-semibold rounded-md text-blue-600 bg-white border border-blue-200 hover:bg-blue-100"
+          >
             + Add Row
           </button>
         </div>
@@ -90,51 +185,131 @@
           <table class="w-full text-sm border-collapse">
             <thead>
               <tr class="text-gray-800">
-                <th class="border-b border-r border-gray-300 px-3 py-2.5 text-center font-semibold">Details of Action</th>
-                <th class="border-b border-r border-gray-300 px-3 py-2.5 text-center font-semibold w-64">Responsibility</th>
-                <th class="border-b border-r border-gray-300 px-3 py-2.5 text-center font-semibold w-44">Date</th>
-                <th class="border-b border-gray-300 px-3 py-2.5 text-center font-semibold w-24">Action</th>
+                <th
+                  class="border-b border-r border-gray-300 px-3 py-2.5 text-center font-semibold"
+                >
+                  Details of Action
+                </th>
+                <th
+                  class="border-b border-r border-gray-300 px-3 py-2.5 text-center font-semibold w-64"
+                >
+                  Responsibility
+                </th>
+                <th
+                  class="border-b border-r border-gray-300 px-3 py-2.5 text-center font-semibold w-44"
+                >
+                  Date
+                </th>
+                <th
+                  class="border-b border-gray-300 px-3 py-2.5 text-center font-semibold w-28"
+                >
+                  Action
+                </th>
               </tr>
             </thead>
             <tbody>
               <!-- Existing (locked) -->
               <tr *ngFor="let x of planDetail?.Icas">
                 <td class="border-b border-r border-gray-200 px-2.5 py-2">
-                  <input type="text" [value]="x.Action" disabled class="w-full px-3 py-2 text-sm rounded-md border border-gray-200 bg-gray-50 text-gray-600" />
+                  <input
+                    type="text"
+                    [value]="x.Action"
+                    disabled
+                    class="w-full px-3 py-2 text-sm rounded-md border border-gray-200 bg-gray-50 text-gray-600"
+                  />
                 </td>
                 <td class="border-b border-r border-gray-200 px-2.5 py-2">
-                  <input type="text" [value]="x.Responsibility" disabled class="w-full px-3 py-2 text-sm rounded-md border border-gray-200 bg-gray-50 text-gray-600" />
+                  <input
+                    type="text"
+                    [value]="x.Responsibility"
+                    disabled
+                    class="w-full px-3 py-2 text-sm rounded-md border border-gray-200 bg-gray-50 text-gray-600"
+                  />
                 </td>
                 <td class="border-b border-r border-gray-200 px-2.5 py-2">
-                  <input type="text" [value]="fmtDate(x.ICA_Date) || '—'" disabled class="w-full px-3 py-2 text-sm rounded-md border border-gray-200 bg-gray-50 text-gray-600 text-center" />
+                  <input
+                    type="text"
+                    [value]="fmtDate(x.ICA_Date) || '—'"
+                    disabled
+                    class="w-full px-3 py-2 text-sm rounded-md border border-gray-200 bg-gray-50 text-gray-600 text-center"
+                  />
                 </td>
-                <td class="border-b border-gray-200 px-2.5 py-2 text-center text-gray-400">–</td>
+                <td class="border-b border-gray-200 px-2 py-1.5 text-center">
+                  <div class="text-[10px] text-gray-400 leading-tight whitespace-nowrap">{{ x.Added_By }}</div>
+                  <div class="text-[10px] text-gray-400 leading-tight whitespace-nowrap">{{ fmtDateTime(x.Added_On) }}</div>
+                </td>
               </tr>
               <!-- Draft rows -->
               <tr *ngFor="let x of draftIcas; let i = index">
                 <td class="border-b border-r border-gray-200 px-2.5 py-2">
-                  <input type="text" [(ngModel)]="x.Action" placeholder="Action taken…"
-                    class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <input
+                    type="text"
+                    [(ngModel)]="x.Action"
+                    placeholder="Action taken…"
+                    class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
                 </td>
                 <td class="border-b border-r border-gray-200 px-2.5 py-2">
-                  <input type="text" [(ngModel)]="x.Responsibility" placeholder="Name / team"
-                    class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <input
+                    type="text"
+                    [(ngModel)]="x.Responsibility"
+                    placeholder="Name / team"
+                    class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
                 </td>
                 <td class="border-b border-r border-gray-200 px-2.5 py-2">
-                  <input type="date" [(ngModel)]="x.ICA_Date"
-                    class="w-full px-2 py-2 text-sm rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <input
+                    type="date"
+                    [(ngModel)]="x.ICA_Date"
+                    class="w-full px-2 py-2 text-sm rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
                 </td>
                 <td class="border-b border-gray-200 px-2.5 py-2">
                   <div class="flex items-center justify-center gap-1">
-                    <button type="button" (click)="addIca()" title="Add row"
-                      class="w-7 h-7 inline-flex items-center justify-center rounded-md text-emerald-600 hover:bg-emerald-50 text-lg font-bold leading-none">+</button>
-                    <button type="button" (click)="removeIca(i)" title="Delete row"
-                      class="w-7 h-7 inline-flex items-center justify-center rounded-md text-red-500 hover:bg-red-50">🗑</button>
+                    <button
+                      type="button"
+                      (click)="addIca()"
+                      title="Add row"
+                      class="w-7 h-7 inline-flex items-center justify-center rounded-md text-emerald-600 hover:bg-emerald-50 text-lg font-bold leading-none"
+                    >
+                      +
+                    </button>
+                    <button
+                      type="button"
+                      (click)="removeIca(i)"
+                      title="Delete row"
+                      class="w-7 h-7 inline-flex items-center justify-center rounded-md text-red-500 hover:bg-red-50"
+                    >
+                      <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
+                  </svg>
+                    </button>
                   </div>
                 </td>
               </tr>
-              <tr *ngIf="draftIcas.length === 0 && (planDetail?.Icas?.length ?? 0) === 0">
-                <td colspan="4" class="px-3 py-5 text-center text-xs text-gray-400 italic">No entries yet — click “+ Add Row”.</td>
+              <tr
+                *ngIf="
+                  draftIcas.length === 0 &&
+                  (planDetail?.Icas?.length ?? 0) === 0
+                "
+              >
+                <td
+                  colspan="4"
+                  class="px-3 py-5 text-center text-xs text-gray-400 italic"
+                >
+                  No entries yet — click “+ Add Row”.
+                </td>
               </tr>
             </tbody>
           </table>
@@ -144,75 +319,185 @@
       <!-- ── PCA ── -->
       <section class="bg-orange-50 rounded-lg border border-orange-200 p-5">
         <div class="flex items-start gap-3 mb-4">
-          <span class="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-orange-100 text-orange-600 text-lg">🛠️</span>
+          <span
+            class="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-orange-100 text-orange-600 text-lg"
+            >🛠️</span
+          >
           <div>
-            <h3 class="text-base font-bold text-gray-900">PCA — Permanent Corrective Action</h3>
-            <p class="text-xs text-gray-500 mt-0.5">Permanent actions to prevent recurrence</p>
+            <h3 class="text-base font-bold text-gray-900">
+              PCA — Permanent Corrective Action
+            </h3>
+            <p class="text-xs text-gray-500 mt-0.5">
+              Permanent actions to prevent recurrence
+            </p>
           </div>
-          <button type="button" (click)="addPca()"
-            class="ml-auto px-3 py-1.5 text-xs font-semibold rounded-md text-orange-600 bg-white border border-orange-200 hover:bg-orange-100">
+          <button
+            type="button"
+            (click)="addPca()"
+            class="ml-auto px-3 py-1.5 text-xs font-semibold rounded-md text-orange-600 bg-white border border-orange-200 hover:bg-orange-100"
+          >
             + Add Row
           </button>
         </div>
 
-        <div class="overflow-x-auto rounded-md border border-orange-200 bg-white">
+        <div
+          class="overflow-x-auto rounded-md border border-orange-200 bg-white"
+        >
           <table class="w-full text-sm border-collapse">
             <thead>
               <tr class="text-gray-800">
-                <th class="border-b border-r border-gray-300 px-3 py-2.5 text-center font-semibold">Details of Action</th>
-                <th class="border-b border-r border-gray-300 px-3 py-2.5 text-center font-semibold w-60">Responsibility</th>
-                <th class="border-b border-r border-gray-300 px-3 py-2.5 text-center font-semibold w-40">Target Date</th>
-                <th class="border-b border-r border-gray-300 px-3 py-2.5 text-center font-semibold w-24">Status <span class="block text-[9px] font-normal text-gray-400">auto</span></th>
-                <th class="border-b border-gray-300 px-3 py-2.5 text-center font-semibold w-24">Action</th>
+                <th
+                  class="border-b border-r border-gray-300 px-3 py-2.5 text-center font-semibold"
+                >
+                  Details of Action
+                </th>
+                <th
+                  class="border-b border-r border-gray-300 px-3 py-2.5 text-center font-semibold w-60"
+                >
+                  Responsibility
+                </th>
+                <th
+                  class="border-b border-r border-gray-300 px-3 py-2.5 text-center font-semibold w-40"
+                >
+                  Target Date
+                </th>
+                <th
+                  class="border-b border-r border-gray-300 px-3 py-2.5 text-center font-semibold w-24"
+                >
+                  Status
+                  <span class="block text-[9px] font-normal text-gray-400"
+                    >auto</span
+                  >
+                </th>
+                <th
+                  class="border-b border-gray-300 px-3 py-2.5 text-center font-semibold w-28"
+                >
+                  Action
+                </th>
               </tr>
             </thead>
             <tbody>
               <!-- Existing (locked) -->
               <tr *ngFor="let x of planDetail?.Pcas">
                 <td class="border-b border-r border-gray-200 px-2.5 py-2">
-                  <input type="text" [value]="x.Action" disabled class="w-full px-3 py-2 text-sm rounded-md border border-gray-200 bg-gray-50 text-gray-600" />
+                  <input
+                    type="text"
+                    [value]="x.Action"
+                    disabled
+                    class="w-full px-3 py-2 text-sm rounded-md border border-gray-200 bg-gray-50 text-gray-600"
+                  />
                 </td>
                 <td class="border-b border-r border-gray-200 px-2.5 py-2">
-                  <input type="text" [value]="x.Responsibility" disabled class="w-full px-3 py-2 text-sm rounded-md border border-gray-200 bg-gray-50 text-gray-600" />
+                  <input
+                    type="text"
+                    [value]="x.Responsibility"
+                    disabled
+                    class="w-full px-3 py-2 text-sm rounded-md border border-gray-200 bg-gray-50 text-gray-600"
+                  />
                 </td>
                 <td class="border-b border-r border-gray-200 px-2.5 py-2">
-                  <input type="text" [value]="fmtDate(x.Target_Date) || '—'" disabled class="w-full px-3 py-2 text-sm rounded-md border border-gray-200 bg-gray-50 text-gray-600 text-center" />
+                  <input
+                    type="text"
+                    [value]="fmtDate(x.Target_Date) || '—'"
+                    disabled
+                    class="w-full px-3 py-2 text-sm rounded-md border border-gray-200 bg-gray-50 text-gray-600 text-center"
+                  />
                 </td>
-                <td class="border-b border-r border-gray-200 px-2.5 py-2 text-center">
-                  <span class="inline-block w-7 py-0.5 rounded-full text-[11px] font-bold"
-                    [ngClass]="statusPill(computePcaStatus(x.Target_Date))">{{ computePcaStatus(x.Target_Date) }}</span>
+                <td
+                  class="border-b border-r border-gray-200 px-2.5 py-2 text-center"
+                >
+                  <span
+                    class="inline-block w-7 py-0.5 rounded-full text-[11px] font-bold"
+                    [ngClass]="statusPill(computePcaStatus(x.Target_Date))"
+                    >{{ computePcaStatus(x.Target_Date) }}</span
+                  >
                 </td>
-                <td class="border-b border-gray-200 px-2.5 py-2 text-center text-gray-400">–</td>
+                <td class="border-b border-gray-200 px-2 py-1.5 text-center">
+                  <div class="text-[10px] text-gray-400 leading-tight whitespace-nowrap">{{ x.Added_By }}</div>
+                  <div class="text-[10px] text-gray-400 leading-tight whitespace-nowrap">{{ fmtDateTime(x.Added_On) }}</div>
+                </td>
               </tr>
               <!-- Draft rows -->
               <tr *ngFor="let x of draftPcas; let i = index">
                 <td class="border-b border-r border-gray-200 px-2.5 py-2">
-                  <input type="text" [(ngModel)]="x.Action" placeholder="Permanent action…"
-                    class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <input
+                    type="text"
+                    [(ngModel)]="x.Action"
+                    placeholder="Permanent action…"
+                    class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
                 </td>
                 <td class="border-b border-r border-gray-200 px-2.5 py-2">
-                  <input type="text" [(ngModel)]="x.Responsibility" placeholder="Name / team"
-                    class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <input
+                    type="text"
+                    [(ngModel)]="x.Responsibility"
+                    placeholder="Name / team"
+                    class="w-full px-3 py-2 text-sm rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
                 </td>
                 <td class="border-b border-r border-gray-200 px-2.5 py-2">
-                  <input type="date" [(ngModel)]="x.Target_Date"
-                    class="w-full px-2 py-2 text-sm rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <input
+                    type="date"
+                    [(ngModel)]="x.Target_Date"
+                    class="w-full px-2 py-2 text-sm rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
                 </td>
-                <td class="border-b border-r border-gray-200 px-2.5 py-2 text-center" title="Auto — from target date">
-                  <span class="inline-block w-7 py-0.5 rounded-full text-[11px] font-bold"
-                    [ngClass]="statusPill(computePcaStatus(x.Target_Date))">{{ computePcaStatus(x.Target_Date) }}</span>
+                <td
+                  class="border-b border-r border-gray-200 px-2.5 py-2 text-center"
+                  title="Auto — from target date"
+                >
+                  <span
+                    class="inline-block w-7 py-0.5 rounded-full text-[11px] font-bold"
+                    [ngClass]="statusPill(computePcaStatus(x.Target_Date))"
+                    >{{ computePcaStatus(x.Target_Date) }}</span
+                  >
                 </td>
                 <td class="border-b border-gray-200 px-2.5 py-2">
                   <div class="flex items-center justify-center gap-1">
-                    <button type="button" (click)="addPca()" title="Add row"
-                      class="w-7 h-7 inline-flex items-center justify-center rounded-md text-emerald-600 hover:bg-emerald-50 text-lg font-bold leading-none">+</button>
-                    <button type="button" (click)="removePca(i)" title="Delete row"
-                      class="w-7 h-7 inline-flex items-center justify-center rounded-md text-red-500 hover:bg-red-50">🗑</button>
+                    <button
+                      type="button"
+                      (click)="addPca()"
+                      title="Add row"
+                      class="w-7 h-7 inline-flex items-center justify-center rounded-md text-emerald-600 hover:bg-emerald-50 text-lg font-bold leading-none"
+                    >
+                      +
+                    </button>
+                    <button
+                      type="button"
+                      (click)="removePca(i)"
+                      title="Delete row"
+                      class="w-7 h-7 inline-flex items-center justify-center rounded-md text-red-500 hover:bg-red-50"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        />
+                      </svg>
+                    </button>
                   </div>
                 </td>
               </tr>
-              <tr *ngIf="draftPcas.length === 0 && (planDetail?.Pcas?.length ?? 0) === 0">
-                <td colspan="5" class="px-3 py-5 text-center text-xs text-gray-400 italic">No entries yet — click “+ Add Row”.</td>
+              <tr
+                *ngIf="
+                  draftPcas.length === 0 &&
+                  (planDetail?.Pcas?.length ?? 0) === 0
+                "
+              >
+                <td
+                  colspan="5"
+                  class="px-3 py-5 text-center text-xs text-gray-400 italic"
+                >
+                  No entries yet — click “+ Add Row”.
+                </td>
               </tr>
             </tbody>
           </table>
@@ -220,24 +505,40 @@
       </section>
 
       <!-- Bottom submit bar -->
-      <div class="bg-white rounded-lg border border-gray-200 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+      <div
+        class="bg-white rounded-lg border border-gray-200 p-4 flex flex-col sm:flex-row sm:items-center gap-3"
+      >
         <p class="text-[11px] text-gray-400 italic flex-1">
           <ng-container *ngIf="!isExistingPlan">
-            Root Cause, ICA and PCA each need at least one entry. Rows can be deleted only before submitting.
-            PCA status is set automatically from the target date.
+            Root Cause, ICA and PCA each need at least one entry. Rows can be
+            deleted only before submitting. PCA status is set automatically from
+            the target date.
           </ng-container>
           <ng-container *ngIf="isExistingPlan">
             Existing rows are locked — new rows will be added to this plan.
           </ng-container>
         </p>
         <div class="flex items-center gap-2 sm:ml-auto">
-          <button type="button" (click)="goBack()"
-            class="px-5 py-2.5 text-sm font-medium rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-200">
+          <button
+            type="button"
+            (click)="goBack()"
+            class="px-5 py-2.5 text-sm font-medium rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-200"
+          >
             Cancel
           </button>
-          <button type="button" (click)="submit()" [disabled]="saving || loadingPlan"
-            class="px-8 py-2.5 text-sm font-bold rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 shadow-sm">
-            {{ saving ? 'Saving…' : (isExistingPlan ? 'Add to Plan' : 'Submit Action Plan') }}
+          <button
+            type="button"
+            (click)="submit()"
+            [disabled]="saving || loadingPlan"
+            class="px-8 py-2.5 text-sm font-bold rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 shadow-sm"
+          >
+            {{
+              saving
+                ? "Saving…"
+                : isExistingPlan
+                  ? "Add to Plan"
+                  : "Submit Action Plan"
+            }}
           </button>
         </div>
       </div>

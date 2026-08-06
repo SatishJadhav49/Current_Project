@@ -161,9 +161,21 @@ namespace API_LSP.Data
                       AND Attribution_ID = @A AND Severity_ID = @S);
 
                 SELECT Action_Plan_ID, Is_Submitted FROM MM_Action_Plan WHERE Action_Plan_ID = @Id;
-                SELECT Root_Cause_ID, ISNULL(Root_Cause,'') FROM MM_Action_Plan_Root_Cause WHERE Action_Plan_ID = @Id ORDER BY Root_Cause_ID;
-                SELECT ICA_ID, ISNULL(Action,''), ISNULL(Responsibility,''), ICA_Date FROM MM_Action_Plan_ICA WHERE Action_Plan_ID = @Id ORDER BY ICA_ID;
-                SELECT PCA_ID, ISNULL(Action,''), ISNULL(Responsibility,''), Target_Date, ISNULL(Status,'R') FROM MM_Action_Plan_PCA WHERE Action_Plan_ID = @Id ORDER BY PCA_ID;";
+                SELECT r.Root_Cause_ID, ISNULL(r.Root_Cause,''),
+                       ISNULL(e.Employee_Name, ISNULL(r.Inserted_Host,'')) AS Added_By, r.Inserted_Date
+                FROM MM_Action_Plan_Root_Cause r
+                LEFT JOIN MM_Employee e ON e.Employee_ID = r.Inserted_User_ID
+                WHERE r.Action_Plan_ID = @Id ORDER BY r.Root_Cause_ID;
+                SELECT i.ICA_ID, ISNULL(i.Action,''), ISNULL(i.Responsibility,''), i.ICA_Date,
+                       ISNULL(e.Employee_Name, ISNULL(i.Inserted_Host,'')) AS Added_By, i.Inserted_Date
+                FROM MM_Action_Plan_ICA i
+                LEFT JOIN MM_Employee e ON e.Employee_ID = i.Inserted_User_ID
+                WHERE i.Action_Plan_ID = @Id ORDER BY i.ICA_ID;
+                SELECT p.PCA_ID, ISNULL(p.Action,''), ISNULL(p.Responsibility,''), p.Target_Date, ISNULL(p.Status,'R'),
+                       ISNULL(e.Employee_Name, ISNULL(p.Inserted_Host,'')) AS Added_By, p.Inserted_Date
+                FROM MM_Action_Plan_PCA p
+                LEFT JOIN MM_Employee e ON e.Employee_ID = p.Inserted_User_ID
+                WHERE p.Action_Plan_ID = @Id ORDER BY p.PCA_ID;";
 
             using var cmd = new SqlCommand(query, connection);
             cmd.Parameters.AddWithValue("@M", modelId);
@@ -185,6 +197,8 @@ namespace API_LSP.Data
                 {
                     Root_Cause_ID = reader.GetDecimal(0),
                     Root_Cause = reader.GetString(1),
+                    Added_By = reader.GetString(2),
+                    Added_On = reader.IsDBNull(3) ? (DateTime?)null : reader.GetDateTime(3),
                 });
 
             await reader.NextResultAsync();
@@ -195,6 +209,8 @@ namespace API_LSP.Data
                     Action = reader.GetString(1),
                     Responsibility = reader.GetString(2),
                     ICA_Date = reader.IsDBNull(3) ? (DateTime?)null : reader.GetDateTime(3),
+                    Added_By = reader.GetString(4),
+                    Added_On = reader.IsDBNull(5) ? (DateTime?)null : reader.GetDateTime(5),
                 });
 
             await reader.NextResultAsync();
@@ -206,6 +222,8 @@ namespace API_LSP.Data
                     Responsibility = reader.GetString(2),
                     Target_Date = reader.IsDBNull(3) ? (DateTime?)null : reader.GetDateTime(3),
                     Status = reader.GetString(4),
+                    Added_By = reader.GetString(5),
+                    Added_On = reader.IsDBNull(6) ? (DateTime?)null : reader.GetDateTime(6),
                 });
 
             return detail;

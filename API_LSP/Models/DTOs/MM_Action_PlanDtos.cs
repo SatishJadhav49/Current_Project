@@ -27,6 +27,8 @@ namespace API_LSP.Models.DTOs
     {
         public decimal Root_Cause_ID { get; set; }
         public string Root_Cause { get; set; } = string.Empty;
+        public string Added_By { get; set; } = string.Empty;
+        public DateTime? Added_On { get; set; }
     }
 
     public class ActionPlanIcaDto
@@ -35,6 +37,8 @@ namespace API_LSP.Models.DTOs
         public string Action { get; set; } = string.Empty;
         public string Responsibility { get; set; } = string.Empty;
         public DateTime? ICA_Date { get; set; }
+        public string Added_By { get; set; } = string.Empty;
+        public DateTime? Added_On { get; set; }
     }
 
     public class ActionPlanPcaDto
@@ -44,6 +48,8 @@ namespace API_LSP.Models.DTOs
         public string Responsibility { get; set; } = string.Empty;
         public DateTime? Target_Date { get; set; }
         public string Status { get; set; } = "R";
+        public string Added_By { get; set; } = string.Empty;
+        public DateTime? Added_On { get; set; }
     }
 
     /// <summary>Full plan detail (existing rows are locked on the client once submitted).</summary>

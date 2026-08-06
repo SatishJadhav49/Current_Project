@@ -9,6 +9,7 @@ import {
   ModelItem,
   SeverityItem,
 } from '../VehicleTracking/vehicle-tracking.models';
+import { SearchPipe } from '../../Shared/pipes/search.pipe';
 import { ActionPlanProblem, ActionPlanService } from './action-plan.service';
 
 interface StatusBucket { problems: number; concerns: number; }
@@ -16,7 +17,7 @@ interface StatusBucket { problems: number; concerns: number; }
 @Component({
   selector: 'app-action-plan',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, SearchPipe],
   templateUrl: './action-plan.component.html',
 })
 export class ActionPlanComponent implements OnInit {
@@ -34,6 +35,11 @@ export class ActionPlanComponent implements OnInit {
   selectedAttributionId = 0;       // 0 = All
   selectedStatus = 'All';          // All | R | Y | G
   selectedSeverityId = -1;         // -1 = All (0 = "no severity")
+  /** Problem (Part|Defect) filter; '' = All. problemSearch narrows its option list. */
+  selectedProblemKey = '';
+  problemSearch = '';
+  /** Free-text search across the results table. */
+  tableSearch = '';
 
   problems: ActionPlanProblem[] = [];
   loading = false;
@@ -75,21 +81,45 @@ export class ActionPlanComponent implements OnInit {
     this.selectedAttributionId = 0;
     this.selectedStatus = 'All';
     this.selectedSeverityId = -1;
+    this.selectedProblemKey = '';
+    this.problemSearch = '';
+    this.tableSearch = '';
   }
 
-  /** Base set after Attribution + Severity (not Status) — drives the summary. */
+  /** Distinct Part—Defect combos from the fetched problems (dropdown options). */
+  get problemOptions(): { key: string; label: string }[] {
+    const seen = new Map<string, string>();
+    for (const p of this.problems) {
+      const key = `${p.Part_ID}|${p.Defect_ID}`;
+      if (!seen.has(key)) seen.set(key, `${p.Part_Name} — ${p.Defect_Name}`);
+    }
+    return Array.from(seen.entries())
+      .map(([key, label]) => ({ key, label }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }
+
+  /** Base set after Problem + Attribution + Severity (not Status) — drives the summary. */
   private get filteredBase(): ActionPlanProblem[] {
     return this.problems.filter(
       (p) =>
+        (this.selectedProblemKey === '' || `${p.Part_ID}|${p.Defect_ID}` === this.selectedProblemKey) &&
         (this.selectedAttributionId === 0 || p.Attribution_ID === this.selectedAttributionId) &&
         (this.selectedSeverityId === -1 || p.Severity_ID === this.selectedSeverityId),
     );
   }
 
-  /** Rows shown in the table (adds the Status filter on top of the base). */
+  /** Rows shown in the table (adds Status filter + free-text search on top of the base). */
   get displayedProblems(): ActionPlanProblem[] {
+    const q = this.tableSearch.trim().toLowerCase();
     return this.filteredBase.filter(
-      (p) => this.selectedStatus === 'All' || p.Status === this.selectedStatus,
+      (p) =>
+        (this.selectedStatus === 'All' || p.Status === this.selectedStatus) &&
+        (!q ||
+          p.Part_Name.toLowerCase().includes(q) ||
+          p.Defect_Name.toLowerCase().includes(q) ||
+          p.Attribution_Name.toLowerCase().includes(q) ||
+          (p.Severity_Code || '').toLowerCase().includes(q) ||
+          p.Status.toLowerCase() === q),
     );
   }
 

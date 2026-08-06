@@ -54,7 +54,7 @@ export const routes: Routes = [
       ),
   },
   {
-    path: 'action',
+    path: 'action/actionplan',
     loadComponent: () =>
       import('./Features/ActionPlan/action-plan.component').then(
         (m) => m.ActionPlanComponent

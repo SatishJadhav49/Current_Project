@@ -24,12 +24,16 @@ export interface ActionPlanProblem {
 export interface ActionPlanRootCause {
   Root_Cause_ID: number;
   Root_Cause: string;
+  Added_By: string;
+  Added_On: string | null;
 }
 export interface ActionPlanIca {
   ICA_ID: number;
   Action: string;
   Responsibility: string;
   ICA_Date: string | null;
+  Added_By: string;
+  Added_On: string | null;
 }
 export interface ActionPlanPca {
   PCA_ID: number;
@@ -37,6 +41,8 @@ export interface ActionPlanPca {
   Responsibility: string;
   Target_Date: string | null;
   Status: string;
+  Added_By: string;
+  Added_On: string | null;
 }
 export interface ActionPlanDetail {
   Action_Plan_ID: number;

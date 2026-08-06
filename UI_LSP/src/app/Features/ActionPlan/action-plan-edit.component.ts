@@ -88,6 +88,21 @@ export class ActionPlanEditComponent implements OnInit {
     return `${day}-${ActionPlanEditComponent.MONTHS[d.getMonth()]}-${d.getFullYear()}`;
   }
 
+  /** Compact date + time for the added-by meta (dd-MMM-yy h:mm AM/PM). */
+  fmtDateTime(value: string | null): string {
+    if (!value) return '';
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return '';
+    const day = String(d.getDate()).padStart(2, '0');
+    const mon = ActionPlanEditComponent.MONTHS[d.getMonth()];
+    const yy = String(d.getFullYear()).slice(-2);
+    let h = d.getHours();
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    return `${day}-${mon}-${yy} ${h}:${mm} ${ampm}`;
+  }
+
   statusPill(status: string): string {
     switch ((status || '').toUpperCase()) {
       case 'G': return 'bg-emerald-100 text-emerald-700';
@@ -123,7 +138,7 @@ export class ActionPlanEditComponent implements OnInit {
   removePca(i: number): void { this.draftPcas.splice(i, 1); }
 
   goBack(): void {
-    this.router.navigate(['/action'], { queryParams: { modelId: this.modelId } });
+    this.router.navigate(['/action/actionplan'], { queryParams: { modelId: this.modelId } });
   }
 
   submit(): void {
