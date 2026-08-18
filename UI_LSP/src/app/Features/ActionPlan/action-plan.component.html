@@ -15,16 +15,7 @@
           <option *ngFor="let m of models" [ngValue]="m.Model_ID">{{ m.Model_Name }}</option>
         </select>
       </div>
-      <div class="w-full md:w-64">
-        <label class="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Problem</label>
-        <input type="text" [(ngModel)]="problemSearch" placeholder="Search problem…"
-          class="w-full px-3 py-1 text-xs border border-gray-300 rounded-md mb-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-        <select name="problem" [(ngModel)]="selectedProblemKey"
-          class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-          <option value="">All</option>
-          <option *ngFor="let o of problemOptions | search: problemSearch" [value]="o.key">{{ o.label }}</option>
-        </select>
-      </div>
+
       <div class="w-full md:w-52">
         <label class="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Attribution</label>
         <select name="attribution" [(ngModel)]="selectedAttributionId"
@@ -49,6 +40,16 @@
           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
           <option [ngValue]="-1">All</option>
           <option *ngFor="let s of severities" [ngValue]="s.Severity_ID">{{ s.Severity_Code || s.Severity_Name }}</option>
+        </select>
+      </div>
+       <div class="w-full md:w-64">
+        <label class="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Problem</label>
+        <!-- <input type="text" [(ngModel)]="problemSearch" placeholder="Search problem…"
+          class="w-full px-3 py-1 text-xs border border-gray-300 rounded-md mb-1 focus:outline-none focus:ring-2 focus:ring-blue-500" /> -->
+        <select name="problem" [(ngModel)]="selectedProblemKey"
+          class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="">All</option>
+          <option *ngFor="let o of problemOptions | search: problemSearch" [value]="o.key">{{ o.label }}</option>
         </select>
       </div>
       <div class="flex gap-2">

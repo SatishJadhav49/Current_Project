@@ -8,6 +8,7 @@ import {
   ViewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { ToastService } from '../../../services';
 import { VehicleTrackingService } from '../vehicle-tracking.service';
 import {
@@ -70,6 +71,12 @@ export class VehicleTrackingHomeComponent implements OnInit, AfterViewInit {
   readonly vehicleService = inject(VehicleTrackingService);
   readonly toast = inject(ToastService);
   readonly webhookService = inject(TeamsWebhookService);
+  private readonly route = inject(ActivatedRoute);
+
+  /** Read-only "Vehicle History" mode, set from the route's data flag.
+   *  Every stage receives [locked]="rfdDone || viewOnly", so the whole screen
+   *  behaves exactly like an RFD-locked vehicle: data visible, no writes. */
+  viewOnly = false;
 
   @ViewChild('vinInput') vinInput!: ElementRef<HTMLInputElement>;
 
@@ -96,7 +103,13 @@ export class VehicleTrackingHomeComponent implements OnInit, AfterViewInit {
   plantCode = localStorage.getItem('Plant_Code') ?? '';
 
   ngOnInit(): void {
+    this.viewOnly = this.route.snapshot.data?.['viewOnly'] === true;
     this.loadStages();
+  }
+
+  /** Single switch handed to every stage component. */
+  get stagesLocked(): boolean {
+    return this.rfdDone || this.viewOnly;
   }
 
   ngAfterViewInit(): void {
@@ -215,7 +228,11 @@ export class VehicleTrackingHomeComponent implements OnInit, AfterViewInit {
         //    Shower is fully optional and driven by the external booth, so we
         //    never auto-land there.
         //  • If everything mandatory is complete, land on the last stage.
-        if (this.rfdDone) {
+        //  • In view-only (Vehicle History) mode there is nothing to action, so
+        //    land on Identify Vehicle and let the user browse the stages.
+        if (this.viewOnly) {
+          this.currentStageId = IDENTIFY_STAGE_ID;
+        } else if (this.rfdDone) {
           this.currentStageId = STAGE.PHYSICAL_RFD;
         } else {
           const firstPending = newStages.find(
@@ -265,6 +282,9 @@ export class VehicleTrackingHomeComponent implements OnInit, AfterViewInit {
   isAccessible(stage: StageView): boolean {
     if (!this.vehicleLoaded) return false;
     if (LOCKED_FOR_NOW.has(stage.Audit_Area_ID)) return false;
+
+    // View-only history: nothing can be entered, so every stage is browsable.
+    if (this.viewOnly) return true;
 
     if (stage.Audit_Area_ID === IDENTIFY_STAGE_ID) return true;
 
